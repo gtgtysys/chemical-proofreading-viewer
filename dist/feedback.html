@@ -6,9 +6,9 @@
   <title>フィードバック — 化学PDF校正ビューア</title>
   <style>
     body { margin: 0; background: #f3f7f8; color: #18323e; font: 16px/1.8 system-ui, sans-serif; }
-    main { max-width: 720px; margin: 48px auto; padding: 28px; background: white; border-radius: 16px; }
-    h1 { font-size: 1.6rem; } a { color: #136b67; } li { margin: 16px 0; }
-    .notice { padding: 16px; background: #fff4df; border-radius: 8px; }
+    main { max-width: 620px; margin: 32px auto; padding: 24px; background: white; border-radius: 10px; }
+    h1 { font-size: 1.5rem; } a { color: #136b67; } li { margin: 10px 0; }
+    .notice { color: #5d6b72; font-size: .9rem; }
     [hidden] { display: none !important; }
     @media(max-width: 760px) { main { margin: 16px; padding: 20px; } }
   </style>
@@ -16,16 +16,14 @@
 <body><main>
   <a href="./">ビューアに戻る</a>
   <h1>フィードバック</h1>
-  <p>誤検出、見逃し、使いにくかった点をお知らせください。GitHubの報告フォームが開きます。投稿にはGitHubアカウントが必要です。</p>
-  <p class="notice">投稿内容は公開されます。勤務先のPDFや本文が写った画面、校正結果JSON・CSVは添付せず、自分で作った短い例で説明してください。このページからPDFや判定結果が自動で送られることはありません。</p>
-  <p id="feedbackStatus" role="status">報告先を確認しています。</p>
+  <p>何が起きて、どうなってほしかったかを教えてください。</p>
+  <p class="notice">GitHubへの投稿は公開されます。機密PDFの内容は書かず、自作の短い例に置き換えてください。</p>
+  <p id="feedbackStatus" role="status" hidden></p>
   <ul id="feedbackLinks" hidden>
-    <li><a id="detectionLink" target="_blank" rel="noopener noreferrer">誤検出・見逃しを報告する</a></li>
-    <li><a id="bugLink" target="_blank" rel="noopener noreferrer">動作不良を報告する</a></li>
-    <li><a id="featureLink" target="_blank" rel="noopener noreferrer">改善要望・使用感を伝える</a></li>
-    <li><a id="issuesLink" target="_blank" rel="noopener noreferrer">既存の報告を見る</a></li>
+    <li><a id="detectionLink" target="_blank" rel="noopener noreferrer">判定について</a></li>
+    <li><a id="bugLink" target="_blank" rel="noopener noreferrer">動作について</a></li>
+    <li><a id="featureLink" target="_blank" rel="noopener noreferrer">改善してほしいこと</a></li>
+    <li><a id="issuesLink" target="_blank" rel="noopener noreferrer">ほかの報告を見る</a></li>
   </ul>
-  <p>再現例・実際の指摘・期待する判定・OSとブラウザーを記載すると、原因を調べやすくなります。</p>
-  <p><a href="./about.html">辞書・ライセンス</a></p>
   <script type="module" src="./feedback.mjs"></script>
 </main></body></html>

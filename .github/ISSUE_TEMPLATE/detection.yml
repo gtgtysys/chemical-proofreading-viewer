@@ -6,39 +6,10 @@ body:
     attributes:
       value: |
         この報告は公開されます。勤務先のPDF・抽出テキスト・校正結果JSON/CSVは添付せず、自作の短い例で説明してください。
-  - type: dropdown
-    id: kind
-    attributes:
-      label: 種類
-      options:
-        - 誤検出（正しいのに指摘された）
-        - 見逃し（誤りなのに指摘されなかった）
-        - ハイライト位置・役割の誤り
-    validations:
-      required: true
-  - type: textarea
-    id: example
-    attributes:
-      label: 公開可能な再現例
-      description: 自分で作った文字列・式と、改行や上下付きなどの状態を記載してください。
-    validations:
-      required: true
   - type: textarea
     id: result
     attributes:
-      label: 実際の判定と期待する判定
-      description: 指摘内容と、どのように判定されるべきかを記載してください。
+      label: 何が、どのように判定されましたか？
+      description: 公開できる短い例と、実際の判定・期待する判定を書いてください。
     validations:
       required: true
-  - type: input
-    id: environment
-    attributes:
-      label: 環境
-      placeholder: Windows 11 / Edge / PDFの作成方法（TeX、PowerPointなど）
-  - type: checkboxes
-    id: privacy
-    attributes:
-      label: 公開内容の確認
-      options:
-        - label: 機密資料や個人情報を含まず、公開可能な内容だけを記載しました。
-          required: true

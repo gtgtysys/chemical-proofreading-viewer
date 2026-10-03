@@ -6,14 +6,8 @@ body:
     attributes:
       value: 投稿は公開されます。教材・勤務先・生徒などの非公開情報は記載しないでください。
   - type: textarea
-    id: problem
-    attributes:
-      label: どんな場面で困りましたか？
-    validations:
-      required: true
-  - type: textarea
     id: idea
     attributes:
-      label: 希望する動作・感想
+      label: 何を、どう改善してほしいですか？
     validations:
       required: true

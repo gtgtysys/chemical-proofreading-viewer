@@ -48,6 +48,14 @@ Copyright Mozilla Foundation. Apache License 2.0。
 
 依存物に含まれる通知は削除しないでください。
 
+## pptx-preview 1.0.7
+
+PPTXを端末内のブラウザで表示するために使用します。ISC License。
+
+- パッケージ：https://www.npmjs.com/package/pptx-preview
+- プロジェクト：https://github.com/loadfix/pptxjs
+- 保存済みライセンス：`dist/vendor/pptx-preview/LICENSE.txt`
+
 ## 独自コード
 
 独自コードのライセンスはまだ選択していません。GitHubで閲覧可能にすることと、自由な再利用を許すオープンソースライセンスを付けることは別です。MIT等を選択する場合も、上記の辞書・依存物を一括して同じライセンスに変更しないでください。

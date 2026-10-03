@@ -11,8 +11,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 const $ = (selector) => document.querySelector(selector);
 const elements = {
   fileInput: $("#fileInput"),
-  dictionaryInput: $("#dictionaryInput"),
   dictionaryStatus: $("#dictionaryStatus"),
+  searchToggleButton: $("#searchToggleButton"),
+  closeSearchButton: $("#closeSearchButton"),
   reloadButton: $("#reloadButton"),
   dropZone: $("#dropZone"),
   documentArea: $("#documentArea"),
@@ -54,6 +55,8 @@ const elements = {
 const state = {
   file: null,
   pdf: null,
+  documentType: null,
+  pptxPreviewer: null,
   pages: [],
   items: [],
   candidates: [],
@@ -300,6 +303,9 @@ async function openPdf(file) {
   }
   await dictionaryReady;
   state.file = file;
+  state.documentType = "pdf";
+  state.pptxPreviewer?.destroy?.();
+  state.pptxPreviewer = null;
   state.pdf = null;
   state.pages = [];
   state.items = [];
@@ -335,7 +341,6 @@ async function openPdf(file) {
     elements.summary.hidden = false;
     elements.filters.hidden = false;
     elements.candidateActions.hidden = false;
-    elements.searchForm.hidden = false;
     const extractedItems = state.items.filter((item) => !item.virtual);
     elements.itemCount.textContent = extractedItems.length.toLocaleString("ja-JP");
     elements.reloadButton.disabled = false;
@@ -351,9 +356,155 @@ async function openPdf(file) {
   }
 }
 
+function availableDocumentWidth() {
+  const style = getComputedStyle(elements.documentArea);
+  const horizontalPadding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+  return Math.max(280, elements.documentArea.clientWidth - horizontalPadding - 8);
+}
+
+function resetDocumentState(file, type) {
+  state.file = file;
+  state.documentType = type;
+  state.pdf = null;
+  state.pages = [];
+  state.items = [];
+  state.candidates = [];
+  state.selectedId = null;
+  state.highlightAll = false;
+  state.searchItemIds = new Set();
+  state.searchOccurrences = [];
+  state.searchCursor = -1;
+  state.pptxPreviewer?.destroy?.();
+  state.pptxPreviewer = null;
+  resetPanels();
+}
+
+async function fingerprintBytes(data) {
+  return [...new Uint8Array(await crypto.subtle.digest("SHA-256", data))]
+    .map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
+function extractPptxSlide(slide, pageNumber, pageCount) {
+  slide.classList.add("page-shell", "pptx-page-shell");
+  slide.dataset.page = String(pageNumber);
+  const pageLabel = document.createElement("span");
+  pageLabel.className = "page-number";
+  pageLabel.textContent = `${pageNumber} / ${pageCount}`;
+  const highlightLayer = document.createElement("div");
+  highlightLayer.className = "highlight-layer";
+  const textLayer = document.createElement("div");
+  textLayer.className = "text-layer pptx-text-layer";
+  textLayer.setAttribute("aria-hidden", "true");
+  const slideRect = slide.getBoundingClientRect();
+  const pageItems = [];
+  const walker = document.createTreeWalker(slide, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue?.trim()) return NodeFilter.FILTER_REJECT;
+      if (node.parentElement?.closest(".page-number,.highlight-layer,.text-layer")) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    const text = node.nodeValue;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const rect = range.getBoundingClientRect();
+    if (!rect.width || !rect.height) continue;
+    const computed = getComputedStyle(node.parentElement);
+    const size = Math.max(1, parseFloat(computed.fontSize) || rect.height);
+    const bold = Number.parseInt(computed.fontWeight, 10) >= 600 || /bold/i.test(computed.fontWeight);
+    const italic = /italic|oblique/i.test(computed.fontStyle);
+    const item = {
+      id: `p${pageNumber}-i${pageItems.length}`,
+      pageNumber,
+      text,
+      normalized: normalizeText(text),
+      font: computed.fontFamily || "",
+      size,
+      bold,
+      italic,
+      role: classifyRole(text, size, bold),
+      rect: { left: rect.left - slideRect.left, top: rect.top - slideRect.top, width: rect.width, height: rect.height },
+      shell: slide,
+      highlightLayer,
+      textLayer,
+    };
+    const span = document.createElement("span");
+    span.textContent = text;
+    span.dataset.itemId = item.id;
+    span.style.left = `${item.rect.left}px`;
+    span.style.top = `${item.rect.top}px`;
+    span.style.width = `${item.rect.width}px`;
+    span.style.height = `${item.rect.height}px`;
+    span.style.fontSize = `${item.rect.height}px`;
+    span.style.lineHeight = `${item.rect.height}px`;
+    textLayer.append(span);
+    pageItems.push(item);
+    state.items.push(item);
+  }
+  slide.append(pageLabel, highlightLayer, textLayer);
+  state.pages.push({ pageNumber, shell: slide, viewport: { width: slideRect.width, height: slideRect.height }, items: pageItems });
+}
+
+async function openPptx(file) {
+  await dictionaryReady;
+  if (!window.pptxPreview?.init) {
+    showToast("PPTX表示機能を読み込めませんでした。");
+    return;
+  }
+  resetDocumentState(file, "pptx");
+  setLoading(true, `${file.name} をブラウザー内で読み込んでいます`);
+  try {
+    const buffer = await file.arrayBuffer();
+    state.fingerprint = await fingerprintBytes(buffer);
+    state.reviews = {}; state.roles = {}; state.exclusions = {}; state.revision = null; state.revisionSignatures = null;
+    $("#revisionPanel").hidden = true;
+    restoreSession();
+    const width = Math.min(960, availableDocumentWidth());
+    state.pptxPreviewer = window.pptxPreview.init(elements.pages, { width, mode: "list" });
+    const presentation = await state.pptxPreviewer.preview(buffer);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const slides = [...elements.pages.querySelectorAll(".pptx-preview-slide-wrapper")];
+    if (!slides.length) throw new Error("スライドを表示できませんでした。");
+    state.pdf = { numPages: slides.length };
+    elements.pageCount.textContent = slides.length;
+    slides.forEach((slide, index) => extractPptxSlide(slide, index + 1, slides.length));
+    analyzeDocument();
+    elements.summary.hidden = false;
+    elements.filters.hidden = false;
+    elements.candidateActions.hidden = false;
+    elements.itemCount.textContent = state.items.length.toLocaleString("ja-JP");
+    elements.reloadButton.disabled = false;
+    elements.searchToggleButton.disabled = false;
+    elements.dropZone.hidden = true;
+    showToast(`${presentation?.slides?.length || slides.length}枚のスライドを解析しました。`);
+  } catch (error) {
+    console.error(error);
+    state.pdf = null;
+    state.documentType = null;
+    elements.dropZone.hidden = false;
+    showToast("PPTXを読み込めませんでした。対応していない図形は表示が崩れる場合があります。");
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function openDocument(file) {
+  const name = file?.name?.toLowerCase() || "";
+  if (name.endsWith(".pptx") || file?.type === "application/vnd.openxmlformats-officedocument.presentationml.presentation") {
+    return openPptx(file);
+  }
+  if (name.endsWith(".pdf") || file?.type === "application/pdf") return openPdf(file);
+  showToast("PDFまたはPPTXファイルを選択してください。");
+}
+
 async function renderAndExtractPage(pageNumber) {
   const page = await state.pdf.getPage(pageNumber);
-  const viewport = page.getViewport({ scale: state.scale });
+  const baseViewport = page.getViewport({ scale: 1 });
+  const scale = Math.min(state.scale, availableDocumentWidth() / baseViewport.width);
+  const viewport = page.getViewport({ scale });
   const shell = document.createElement("article");
   shell.className = "page-shell";
   shell.dataset.page = String(pageNumber);
@@ -385,7 +536,7 @@ async function renderAndExtractPage(pageNumber) {
     if (!raw.str || !raw.str.trim() || !raw.transform) continue;
     const tx = pdfjsLib.Util.transform(viewport.transform, raw.transform);
     const scaledHeight = Math.max(5, Math.hypot(tx[2], tx[3]));
-    const scaledWidth = Math.max(2, raw.width * state.scale);
+    const scaledWidth = Math.max(2, raw.width * scale);
     const fontRef = raw.fontName;
     let fontObj = null;
     try { fontObj = page.commonObjs.get(fontRef); } catch { /* font metadata is optional */ }
@@ -778,6 +929,8 @@ function resetPanels() {
   elements.candidateActions.hidden = true;
   elements.summary.hidden = true;
   elements.searchForm.hidden = true;
+  elements.searchToggleButton.disabled = true;
+  elements.searchToggleButton.setAttribute("aria-expanded", "false");
   elements.searchInput.value = "";
   elements.searchResultCount.textContent = "";
   elements.searchPreviousButton.disabled = true;
@@ -1071,7 +1224,7 @@ function saveSession() {
   try {
     localStorage.setItem('chem-review:' + state.fingerprint, JSON.stringify(sessionSnapshot()));
     localStorage.setItem('chem-profiles', JSON.stringify({profile: state.profile, preferences: state.preferences, saveEnabled: state.saveEnabled}));
-    $('#saveStatus').textContent = '確認状態と比較用の抽出テキストを、このブラウザ内に保存しました。PDFを開き直すと復元します。';
+    $('#saveStatus').textContent = '確認状態と比較用の抽出テキストを、このブラウザ内に保存しました。同じ資料を開き直すと復元します。';
   } catch { $('#saveStatus').textContent = 'ブラウザ内に保存できません。確認データをJSONで保存してください。'; }
 }
 function downloadFile(name, data, type) {
@@ -1085,7 +1238,11 @@ function downloadFile(name, data, type) {
 function addWorkflowCandidates(candidates, lines) {
   const rows=lines.map(line => ({...line, page:line.pageNumber, text: line.text.split('').map((ch,index) => state.exclusions[line.charMap[index]?.itemId] ? ' ' : ch).join('')}));
   function addHit(line, hit, type, label, suggestion) {
-    const segments=segmentsFromCharacterMap(line.charMap,hit.start,hit.length);
+    const locations=[hit,...(hit.related || [])];
+    const segments=locations.flatMap(location => {
+      const sourceLine=lines[location.line];
+      return sourceLine ? segmentsFromCharacterMap(sourceLine.charMap,location.start,location.length) : [];
+    });
     const item=state.items.find(i=>i.id===segments[0]?.itemId);
     if(item) candidates.push(makeCandidate({item,segments,type,label,severity:'medium',text:hit.text,suggestion,reason:hit.reason}));
   }
@@ -1195,23 +1352,19 @@ function escapeHtml(value) {
   return value.replace(/[&<>"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character]));
 }
 
-elements.fileInput.addEventListener("change", (event) => openPdf(event.target.files?.[0]));
-elements.dictionaryInput.addEventListener("change", async (event) => {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  try {
-    await dictionaryReady;
-    compileDictionary(JSON.parse(await file.text()));
-    if (state.pdf) analyzeDocument();
-    showToast(`${state.dictionary.name || file.name}を読み込みました。`);
-  } catch (error) {
-    console.error(error);
-    showToast(error instanceof Error ? error.message : "辞書を読み込めませんでした。");
-  } finally {
-    elements.dictionaryInput.value = "";
-  }
+elements.fileInput.addEventListener("change", (event) => openDocument(event.target.files?.[0]));
+elements.reloadButton.addEventListener("click", () => state.file && openDocument(state.file));
+elements.searchToggleButton.addEventListener("click", () => {
+  const opening = elements.searchForm.hidden;
+  elements.searchForm.hidden = !opening;
+  elements.searchToggleButton.setAttribute("aria-expanded", String(opening));
+  if (opening) elements.searchInput.focus();
 });
-elements.reloadButton.addEventListener("click", () => state.file && openPdf(state.file));
+elements.closeSearchButton.addEventListener("click", () => {
+  elements.searchForm.hidden = true;
+  elements.searchToggleButton.setAttribute("aria-expanded", "false");
+  elements.searchToggleButton.focus();
+});
 elements.highlightAllButton.addEventListener("click", () => {
   state.highlightAll = !state.highlightAll;
   elements.highlightAllButton.setAttribute("aria-pressed", String(state.highlightAll));
@@ -1252,9 +1405,18 @@ for (const eventName of ["dragleave", "drop"]) {
     elements.dropZone.classList.remove("dragover");
   });
 }
-elements.documentArea.addEventListener("drop", (event) => openPdf(event.dataTransfer?.files?.[0]));
+elements.documentArea.addEventListener("drop", (event) => openDocument(event.dataTransfer?.files?.[0]));
 window.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") elements.detailPanel.classList.remove("open");
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f" && state.pdf) {
+    event.preventDefault();
+    elements.searchForm.hidden = false;
+    elements.searchToggleButton.setAttribute("aria-expanded", "true");
+    elements.searchInput.focus();
+    elements.searchInput.select();
+  } else if (event.key === "Escape" && !elements.searchForm.hidden) {
+    elements.searchForm.hidden = true;
+    elements.searchToggleButton.setAttribute("aria-expanded", "false");
+  } else if (event.key === "Escape") elements.detailPanel.classList.remove("open");
 });
 
 function registerWebMcpTools() {
@@ -1264,7 +1426,7 @@ function registerWebMcpTools() {
     {
       name: "list_proofreading_candidates",
       title: "校正候補を一覧取得",
-      description: "現在読み込まれているPDFの校正候補を、ページと種類を含めて返します。",
+      description: "現在読み込まれている資料の校正候補を、ページと種類を含めて返します。",
       inputSchema: { type: "object", properties: {}, additionalProperties: false },
       annotations: { readOnlyHint: true, untrustedContentHint: true },
       execute() {
@@ -1292,8 +1454,8 @@ function registerWebMcpTools() {
     },
     {
       name: "search_pdf_text",
-      title: "PDF内の文字列を検索",
-      description: "指定した文字列をPDF全体から検索し、空白・改行・ページ境界を無視して一致箇所をハイライトします。",
+      title: "資料内の文字列を検索",
+      description: "指定した文字列を資料全体から検索し、空白・改行・ページ境界を無視して一致箇所をハイライトします。",
       inputSchema: {
         type: "object",
         properties: { query: { type: "string" } },
@@ -1310,7 +1472,7 @@ function registerWebMcpTools() {
     {
       name: "highlight_all_candidates",
       title: "全候補をハイライト",
-      description: "検出されたすべての校正候補をPDF上でハイライトします。",
+      description: "検出されたすべての校正候補を資料上でハイライトします。",
       inputSchema: { type: "object", properties: {}, additionalProperties: false },
       annotations: { readOnlyHint: false, untrustedContentHint: true },
       execute() {

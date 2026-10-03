@@ -4,6 +4,7 @@ try {
   if (!response.ok) throw new Error('configuration unavailable');
   const {repository} = await response.json();
   if (typeof repository !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9-]*\/[A-Za-z0-9_.-]+$/.test(repository)) {
+    status.hidden = false;
     status.textContent = 'このコピーには報告先がまだ設定されていません。GitHub Pagesで公開すると、公開先リポジトリの報告フォームに接続されます。';
   } else {
     const base = `https://github.com/${repository}/issues`;
@@ -12,8 +13,8 @@ try {
     }
     document.querySelector('#issuesLink').href = base;
     document.querySelector('#feedbackLinks').hidden = false;
-    status.textContent = `報告先：${repository}`;
   }
 } catch {
+  status.hidden = false;
   status.textContent = '報告先の設定を読み込めませんでした。時間をおいて、このページを開き直してください。';
 }

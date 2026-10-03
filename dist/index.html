@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="PDFを端末内で解析し、化学用語・化学式・書式の候補を確認するビューア" />
+    <meta name="description" content="PDF・PPTXを端末内で解析し、化学用語・化学式・書式の候補を確認するビューア" />
     <title>化学PDF校正ビューア</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23102736'/%3E%3Cpath d='M22 12h20v5l-4 7v7l10 16a5 5 0 0 1-4 8H20a5 5 0 0 1-4-8l10-16v-7l-4-7z' fill='none' stroke='%236fd5c2' stroke-width='4'/%3E%3Cpath d='M21 44h22' stroke='%23f0b85a' stroke-width='4'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=19" />
   </head>
   <body>
     <header class="topbar">
@@ -20,12 +20,11 @@
       <div class="top-actions">
         <span class="local-badge"><span aria-hidden="true"></span>端末内で処理</span>
         <span id="dictionaryStatus" class="dictionary-status" title="現在使用中の辞書">辞書を読込中</span>
-        <label class="dictionary-button" for="dictionaryInput">辞書を開く</label>
-        <input id="dictionaryInput" type="file" accept="application/json,.json" hidden />
+        <button id="searchToggleButton" class="secondary-button" type="button" disabled aria-expanded="false">検索</button>
         <button id="reloadButton" class="secondary-button" type="button" disabled>再解析</button>
         <button id="openReactionButton" class="secondary-button" type="button">反応式を検査</button>
-        <label class="file-button" for="fileInput">PDFを開く</label>
-        <input id="fileInput" type="file" accept="application/pdf,.pdf" hidden />
+        <label class="file-button" for="fileInput">PDF・PPTXを開く</label>
+        <input id="fileInput" type="file" accept="application/pdf,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx" hidden />
         <label class="dictionary-button" for="updatedPdfInput">更新PDFを開く</label>
         <input id="updatedPdfInput" type="file" accept="application/pdf,.pdf" hidden />
       </div>
@@ -61,7 +60,7 @@
             <label for="sessionInput" class="inline-file">確認データを読み込む</label>
             <input id="sessionInput" type="file" accept=".json,application/json" hidden />
             <button id="exportCsv" type="button">校正結果を保存（CSV）</button>
-            <button id="clearSavedSession" type="button">このPDFの保存状態を消去</button>
+            <button id="clearSavedSession" type="button">この資料の保存状態を消去</button>
           </details>
           <details id="exportPreview" class="workflow-settings" hidden><summary>書き出したデータ</summary><p id="exportDescription"></p><textarea id="exportText" rows="5" readonly aria-label="書き出しデータ"></textarea><button id="copyExport" type="button">データをコピー</button></details>
           <details class="workflow-settings">
@@ -89,26 +88,27 @@
         </div>
         <div id="emptyCandidates" class="panel-empty">
           <div class="empty-icon" aria-hidden="true">◎</div>
-          <p>PDFを開くと、候補がここに並びます。</p>
+          <p>PDF・PPTXを開くと、候補がここに並びます。</p>
         </div>
         <ol id="candidateList" class="candidate-list"></ol>
       </aside>
 
-      <section id="documentArea" class="document-area" aria-label="PDF表示領域">
+      <section id="documentArea" class="document-area" aria-label="資料表示領域">
         <form id="searchForm" class="search-bar" role="search" hidden>
-          <label class="sr-only" for="searchInput">PDF内の文字列を検索</label>
+          <label class="sr-only" for="searchInput">資料内の文字列を検索</label>
           <input id="searchInput" type="search" placeholder="文字列を検索（空白を無視）" autocomplete="off" />
           <button class="search-button" type="submit">検索</button>
           <button id="searchPreviousButton" class="search-nav" type="button" aria-label="前の検索結果" title="前の検索結果" disabled>↑</button>
           <button id="searchNextButton" class="search-nav" type="button" aria-label="次の検索結果" title="次の検索結果" disabled>↓</button>
           <button id="clearTextSearchButton" class="search-clear" type="button" hidden>解除</button>
+          <button id="closeSearchButton" class="search-clear" type="button" aria-label="検索を閉じる" title="検索を閉じる">×</button>
           <output id="searchResultCount" aria-live="polite"></output>
         </form>
         <div id="dropZone" class="drop-zone">
           <div class="drop-symbol" aria-hidden="true">PDF</div>
-          <h2>確認するPDFをここにドロップ</h2>
-          <p>または右上の「PDFを開く」から選択してください。</p>
-          <p class="privacy-note">ファイルはこのブラウザの外へ送信されません。</p>
+          <h2>確認するPDF・PPTXをここにドロップ</h2>
+          <p>または右上の「PDF・PPTXを開く」から選択してください。</p>
+          <p class="privacy-note">PDF・PPTXはブラウザー内だけで読み込み、外部へ送信しません。</p>
         </div>
         <div id="loadingState" class="loading-state" hidden>
           <div class="spinner" aria-hidden="true"></div>
@@ -133,7 +133,7 @@
         </div>
         <div id="emptyDetail" class="panel-empty detail-empty">
           <div class="empty-icon" aria-hidden="true">⌖</div>
-          <p>候補またはPDF本文を選ぶと、役割・ページ・書式情報を確認できます。</p>
+          <p>候補または資料の文字を選ぶと、役割・ページ・書式情報を確認できます。</p>
         </div>
         <div id="detail" class="detail" hidden>
           <span id="detailType" class="detail-type"></span>
@@ -169,6 +169,7 @@
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./app.js?v=18"></script>
+  <script src="./vendor/pptx-preview/pptx-preview.umd.js"></script>
+  <script type="module" src="./app.js?v=19"></script>
   </body>
 </html>

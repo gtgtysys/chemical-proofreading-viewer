@@ -71,20 +71,22 @@ export function structureChecks(rows) {
       const hit={line,start:m.index,length:m[0].length,text:m[0]};
       if(title) {
         const previous=definitions.get(key);
-        if(previous && (rows[previous.line].page===undefined || rows[previous.line].page===row.page)) hits.push({...hit,reason:`同じページで「${key}」の見出しが重複しています。意図した重複か確認してください。`});
+        if(previous && (rows[previous.line].page===undefined || rows[previous.line].page===row.page)) hits.push({...hit,related:[previous],reason:`「${key}」の見出しが重複しています。1つ目と2つ目を両方ハイライトします。`});
         definitions.set(key,hit);
       } else mentions.push({...hit,key});
     }
   });
   for(const mention of mentions) if(!definitions.has(mention.key)) hits.push({...mention,reason:`「${mention.key}」の図表見出しをテキストから確認できません。画像内の見出し・別冊への参照も確認してください。`});
-  const numbers=new Set();let previousNumber=0;
+  const numbers=new Map();let previousNumber=0;
   rows.forEach((row,line)=>{
-    const match=row.text.match(/^\s*(?:問|問題)\s*([0-9０-９]+)(?=\s|[.．:：、]|$)/);
+    const match=row.text.match(/^\s*(?:大問|問題|問)\s*([0-9０-９]+)(?=\s|[.．:：、]|$)/);
     if(!match) return;
     const key=match[1].normalize('NFKC');
     if(Number(key)===1 && (previousNumber>1 || rows[line-1]?.page!==row.page)) numbers.clear();
-    if(numbers.has(key)) hits.push({line,start:match.index,length:match[0].length,text:match[0],reason:`問題番号 ${key} が重複しています。章・大問で番号を振り直している可能性もあります。`});
-    numbers.add(key);
+    const current={line,start:match.index,length:match[0].length,text:match[0],page:row.page};
+    const previous=numbers.get(key);
+    if(previous) hits.push({...current,related:[previous],reason:`${match[0].trim()} が重複しています。1つ目と2つ目を両方ハイライトします。章ごとの振り直しなら「問題なし」にしてください。`});
+    else numbers.set(key,current);
     previousNumber=Number(key);
   });
   // ASCII parentheses/brackets are often math intervals, units or detached PDF equation fragments.
