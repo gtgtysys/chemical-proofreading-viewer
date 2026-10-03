@@ -1,0 +1,19 @@
+name: 改善要望・使用感
+description: ほしい機能や使いにくかった点を教えてください
+title: "[要望] "
+body:
+  - type: markdown
+    attributes:
+      value: 投稿は公開されます。教材・勤務先・生徒などの非公開情報は記載しないでください。
+  - type: textarea
+    id: problem
+    attributes:
+      label: どんな場面で困りましたか？
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: 希望する動作・感想
+    validations:
+      required: true

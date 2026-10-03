@@ -1,0 +1,455 @@
+{
+  "source": "Wikidata",
+  "license": "CC0-1.0",
+  "entries": [
+    {
+      "term": "けん化",
+      "entityId": "Q335024",
+      "revision": 2548780764,
+      "label": "鹸化",
+      "aliases": [
+        "鹸化価",
+        "ケン化",
+        "鹼化",
+        "けん化",
+        "けん化価"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q335024",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "イオン反応式",
+      "entityId": "Q24863224",
+      "revision": 1379021466,
+      "label": "イオン反応式",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q24863224",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "エステル結合",
+      "entityId": "Q101487",
+      "revision": 2517883370,
+      "label": "エステル",
+      "aliases": [
+        "エステル結合"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q101487",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "キサントプロテイン反応",
+      "entityId": "Q899096",
+      "revision": 2317036769,
+      "label": "キサントプロテイン反応",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q899096",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "グリコシド結合",
+      "entityId": "Q422553",
+      "revision": 2515866584,
+      "label": "グリコシド結合",
+      "aliases": [
+        "グルコシド結合"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q422553",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "スズ",
+      "entityId": "Q1096",
+      "revision": 2549514243,
+      "label": "スズ",
+      "aliases": [
+        "錫",
+        "すず"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q1096",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "ヒドロキシ基",
+      "entityId": "Q104116",
+      "revision": 2549837386,
+      "label": "ヒドロキシ基",
+      "aliases": [
+        "水酸基",
+        "ヒドロキシ",
+        "ヒドロキシル基"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q104116",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "ビウレット反応",
+      "entityId": "Q804138",
+      "revision": 2534460866,
+      "label": "ビウレット反応",
+      "aliases": [
+        "ビウレット試験",
+        "ビウレット試薬",
+        "ビウレット法"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q804138",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "不可逆反応",
+      "entityId": "Q11361670",
+      "revision": 1382895568,
+      "label": "不可逆反応",
+      "aliases": [
+        "不可逆的"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q11361670",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "両性酸化物",
+      "entityId": "Q182677",
+      "revision": 2547938475,
+      "label": "両性",
+      "aliases": [
+        "両性物質",
+        "両性酸化物"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q182677",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "付加重合",
+      "entityId": "Q55630230",
+      "revision": 2455496227,
+      "label": "付加重合",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q55630230",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "全圧",
+      "entityId": "Q1043944",
+      "revision": 2515891827,
+      "label": "全圧",
+      "aliases": [
+        "よどみ点圧力",
+        "停滞圧力"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q1043944",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "共役塩基",
+      "entityId": "Q33113572",
+      "revision": 2483540026,
+      "label": "共役塩基",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q33113572",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "共役酸",
+      "entityId": "Q2014867",
+      "revision": 2480355785,
+      "label": "共役酸",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q2014867",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "分子結晶",
+      "entityId": "Q899235",
+      "revision": 2505472743,
+      "label": "分子結晶",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q899235",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "双性イオン",
+      "entityId": "Q245115",
+      "revision": 2532157224,
+      "label": "双性イオン",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q245115",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "幾何異性体",
+      "entityId": "Q283611",
+      "revision": 2535697288,
+      "label": "幾何異性体",
+      "aliases": [
+        "Cis-trans異性体",
+        "E/Z",
+        "幾何異性",
+        "シストランス異性体",
+        "Z体",
+        "シス-トランス異性体"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q283611",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "接触法",
+      "entityId": "Q908924",
+      "revision": 2501394323,
+      "label": "接触法",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q908924",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "標準溶液",
+      "entityId": "Q377109",
+      "revision": 2496929863,
+      "label": "標準溶液",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q377109",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "溶解度積",
+      "entityId": "Q11229788",
+      "revision": 2515970277,
+      "label": "溶解度積",
+      "aliases": [
+        "溶解度定数"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q11229788",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "生成熱",
+      "entityId": "Q721706",
+      "revision": 2529075243,
+      "label": "生成熱",
+      "aliases": [
+        "標準生成熱"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q721706",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "等電点",
+      "entityId": "Q308708",
+      "revision": 2515859142,
+      "label": "等電点",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q308708",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "緩衝作用",
+      "entityId": "Q208465",
+      "revision": 2549169081,
+      "label": "緩衝液",
+      "aliases": [
+        "緩衝溶液",
+        "緩衝作用"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q208465",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "縮合重合",
+      "entityId": "Q2371697",
+      "revision": 2515921308,
+      "label": "縮合重合",
+      "aliases": [
+        "重合度調節剤",
+        "重縮合",
+        "縮重合"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q2371697",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "置換反応",
+      "entityId": "Q503396",
+      "revision": 2539791150,
+      "label": "置換反応",
+      "aliases": [
+        "置換化合物"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q503396",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "配位数",
+      "entityId": "Q397226",
+      "revision": 2485150148,
+      "label": "配位数",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q397226",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "鋼",
+      "entityId": "Q11427",
+      "revision": 2541790297,
+      "label": "鋼",
+      "aliases": [
+        "鋼鉄",
+        "鉄鋼"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q11427",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "開環重合",
+      "entityId": "Q900770",
+      "revision": 2515887484,
+      "label": "開環重合",
+      "aliases": [
+        "開環重合反応"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q900770",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "エタノール沈殿",
+      "entityId": "Q2571416",
+      "revision": 2515923496,
+      "label": "エタノール沈殿",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q2571416",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "エチン",
+      "entityId": "Q133145",
+      "revision": 2549524631,
+      "label": "アセチレン",
+      "aliases": [
+        "エチン"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q133145",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "エテン",
+      "entityId": "Q151313",
+      "revision": 2549525241,
+      "label": "エチレン",
+      "aliases": [
+        "エテン"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q151313",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "ガラス棒",
+      "entityId": "Q900201",
+      "revision": 1828147074,
+      "label": "ガラス棒",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q900201",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "ブロモチモールブルー",
+      "entityId": "Q407506",
+      "revision": 2483127496,
+      "label": "ブロモチモールブルー",
+      "aliases": [
+        "3,3-ビス(5-イソプロピル-4-ヒドロキシ-3ブロモ-2-メチルフェニル)-3H-2,1-ベンゾオキサチオール 1,1-ジオキシド",
+        "C27H28Br2O5S",
+        "ブロムチモールブルー",
+        "ブロム・チモル・ブルー液",
+        "BTB溶液",
+        "3',3''-ジブロモチモールスルホンフタレイン",
+        "BTB液"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q407506",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "プロペン",
+      "entityId": "Q151324",
+      "revision": 2551276033,
+      "label": "プロピレン",
+      "aliases": [
+        "プロペン"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q151324",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "リービッヒ冷却器",
+      "entityId": "Q899594",
+      "revision": 2370218695,
+      "label": "リービッヒ冷却器",
+      "aliases": [
+        "リービッヒ冷却管"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q899594",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "三角フラスコ",
+      "entityId": "Q335201",
+      "revision": 2549206757,
+      "label": "フラスコ",
+      "aliases": [
+        "コルベン",
+        "ナシフラスコ",
+        "ケルダールフラスコ",
+        "クライゼンフラスコ",
+        "なすフラスコ",
+        "エルレンマイヤーフラスコ",
+        "三角フラスコ",
+        "丸底フラスコ",
+        "坂口フラスコ"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q335201",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "丸底フラスコ",
+      "entityId": "Q335201",
+      "revision": 2549206757,
+      "label": "フラスコ",
+      "aliases": [
+        "コルベン",
+        "ナシフラスコ",
+        "ケルダールフラスコ",
+        "クライゼンフラスコ",
+        "なすフラスコ",
+        "エルレンマイヤーフラスコ",
+        "三角フラスコ",
+        "丸底フラスコ",
+        "坂口フラスコ"
+      ],
+      "url": "https://www.wikidata.org/wiki/Q335201",
+      "license": "CC0-1.0"
+    },
+    {
+      "term": "水酸化マグネシウム",
+      "entityId": "Q407548",
+      "revision": 2549540192,
+      "label": "水酸化マグネシウム",
+      "aliases": [],
+      "url": "https://www.wikidata.org/wiki/Q407548",
+      "license": "CC0-1.0"
+    }
+  ],
+  "unmatched": [
+    "不動態",
+    "両性元素",
+    "中和点",
+    "単位格子",
+    "反応エンタルピー",
+    "反応速度定数",
+    "平衡移動",
+    "当量点",
+    "標準電極電位",
+    "燃焼エンタルピー",
+    "生成エンタルピー",
+    "還元性",
+    "鎖式炭化水素",
+    "二量化",
+    "枝付きフラスコ"
+  ]
+}

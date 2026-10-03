@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="PDFを端末内で解析し、化学用語・化学式・書式の候補を確認するビューア" />
+    <title>化学PDF校正ビューア</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23102736'/%3E%3Cpath d='M22 12h20v5l-4 7v7l10 16a5 5 0 0 1-4 8H20a5 5 0 0 1-4-8l10-16v-7l-4-7z' fill='none' stroke='%236fd5c2' stroke-width='4'/%3E%3Cpath d='M21 44h22' stroke='%23f0b85a' stroke-width='4'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">⌬</div>
+        <div>
+          <h1>化学PDF校正ビューア</h1>
+          <p><a href="./feedback.html" target="_blank" rel="noopener noreferrer" style="color:inherit">フィードバック</a> · <a href="./about.html" target="_blank" rel="noopener noreferrer" style="color:inherit">辞書・利用条件</a></p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span class="local-badge"><span aria-hidden="true"></span>端末内で処理</span>
+        <span id="dictionaryStatus" class="dictionary-status" title="現在使用中の辞書">辞書を読込中</span>
+        <label class="dictionary-button" for="dictionaryInput">辞書を開く</label>
+        <input id="dictionaryInput" type="file" accept="application/json,.json" hidden />
+        <button id="reloadButton" class="secondary-button" type="button" disabled>再解析</button>
+        <button id="openReactionButton" class="secondary-button" type="button">反応式を検査</button>
+        <label class="file-button" for="fileInput">PDFを開く</label>
+        <input id="fileInput" type="file" accept="application/pdf,.pdf" hidden />
+        <label class="dictionary-button" for="updatedPdfInput">更新PDFを開く</label>
+        <input id="updatedPdfInput" type="file" accept="application/pdf,.pdf" hidden />
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="panel candidate-panel" aria-label="検出候補">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">検出結果</p>
+            <h2>確認候補</h2>
+          </div>
+          <span id="candidateCount" class="count">0</span>
+        </div>
+        <div id="summary" class="summary" hidden>
+          <div><span>ページ</span><strong id="pageCount">0</strong></div>
+          <div><span>文字要素</span><strong id="itemCount">0</strong></div>
+          <div><span>候補</span><strong id="summaryCandidateCount">0</strong></div>
+        </div>
+        <div id="candidateActions" class="candidate-actions" hidden>
+          <button id="highlightAllButton" class="toggle-button" type="button" aria-pressed="false">全候補をハイライト</button>
+          <div class="workflow-row">
+            <label for="reviewFilter">確認状態</label>
+            <select id="reviewFilter"><option value="all">すべて</option><option value="unreviewed">未確認</option><option value="fix">要修正</option><option value="accepted">問題なし</option><option value="pending">保留</option></select>
+            <button id="nextUnreviewed" type="button">次の未確認</button>
+          </div>
+          <output id="reviewProgress" aria-live="polite"></output>
+          <details class="workflow-settings">
+            <summary>保存・書き出し</summary>
+            <label><input id="autoSave" type="checkbox" checked /> ブラウザ内に自動保存</label>
+            <p id="saveStatus">確認状態はこのブラウザ内に保存します。</p>
+            <button id="exportSession" type="button">確認データを保存（JSON）</button>
+            <label for="sessionInput" class="inline-file">確認データを読み込む</label>
+            <input id="sessionInput" type="file" accept=".json,application/json" hidden />
+            <button id="exportCsv" type="button">校正結果を保存（CSV）</button>
+            <button id="clearSavedSession" type="button">このPDFの保存状態を消去</button>
+          </details>
+          <details id="exportPreview" class="workflow-settings" hidden><summary>書き出したデータ</summary><p id="exportDescription"></p><textarea id="exportText" rows="5" readonly aria-label="書き出しデータ"></textarea><button id="copyExport" type="button">データをコピー</button></details>
+          <details class="workflow-settings">
+            <summary>教材の表記ルール</summary>
+            <label for="profileSelect">ルールセット</label>
+            <select id="profileSelect"><option value="default">共通</option><option value="middle">中学教材</option><option value="high">高校教材</option><option value="workplace">勤務先</option></select>
+            <label for="preferenceInput">別表記 =&gt; 統一する表記（1行1件）</label>
+            <textarea id="preferenceInput" rows="4" placeholder="濾過 => ろ過"></textarea>
+            <p>各セットに表記ルールを登録できます。最初は空欄です。</p>
+            <button id="applyPreferences" type="button">ルールを適用</button>
+          </details>
+          <details id="exclusionSettings" class="workflow-settings"><summary>検査除外の管理</summary><div id="exclusionList"></div></details>
+          <details id="revisionPanel" class="workflow-settings" hidden><summary>更新PDFとの比較</summary><div id="revisionResult"></div><p>テキスト行の追加・削除を比較します。文字を変えない書式変更は比較対象に含みません。</p></details>
+          <div id="coverageReport" class="coverage-report" role="status"></div>
+        </div>
+        <div id="filters" class="filters" hidden>
+          <button type="button" class="filter active" data-filter="all">すべて</button>
+          <button type="button" class="filter" data-filter="term">用語</button>
+          <button type="button" class="filter" data-filter="symbol">記号</button>
+          <button type="button" class="filter" data-filter="formula">化学式</button>
+          <button type="button" class="filter" data-filter="reaction">反応式</button>
+          <button type="button" class="filter" data-filter="format">書式</button>
+          <button type="button" class="filter" data-filter="structure">番号・括弧</button>
+          <button type="button" class="filter" data-filter="preference">表記統一</button>
+        </div>
+        <div id="emptyCandidates" class="panel-empty">
+          <div class="empty-icon" aria-hidden="true">◎</div>
+          <p>PDFを開くと、候補がここに並びます。</p>
+        </div>
+        <ol id="candidateList" class="candidate-list"></ol>
+      </aside>
+
+      <section id="documentArea" class="document-area" aria-label="PDF表示領域">
+        <form id="searchForm" class="search-bar" role="search" hidden>
+          <label class="sr-only" for="searchInput">PDF内の文字列を検索</label>
+          <input id="searchInput" type="search" placeholder="文字列を検索（空白を無視）" autocomplete="off" />
+          <button class="search-button" type="submit">検索</button>
+          <button id="searchPreviousButton" class="search-nav" type="button" aria-label="前の検索結果" title="前の検索結果" disabled>↑</button>
+          <button id="searchNextButton" class="search-nav" type="button" aria-label="次の検索結果" title="次の検索結果" disabled>↓</button>
+          <button id="clearTextSearchButton" class="search-clear" type="button" hidden>解除</button>
+          <output id="searchResultCount" aria-live="polite"></output>
+        </form>
+        <div id="dropZone" class="drop-zone">
+          <div class="drop-symbol" aria-hidden="true">PDF</div>
+          <h2>確認するPDFをここにドロップ</h2>
+          <p>または右上の「PDFを開く」から選択してください。</p>
+          <p class="privacy-note">ファイルはこのブラウザの外へ送信されません。</p>
+        </div>
+        <div id="loadingState" class="loading-state" hidden>
+          <div class="spinner" aria-hidden="true"></div>
+          <p id="loadingText">PDFを読み込んでいます</p>
+        </div>
+        <div id="pages" class="pages"></div>
+      </section>
+
+      <aside class="panel detail-panel" aria-label="候補の詳細">
+        <form id="reactionForm" class="reaction-check">
+          <label for="reactionInput">反応式の原子数・電荷を確認</label>
+          <textarea id="reactionInput" rows="3" placeholder="2H₂ + O₂ → 2H₂O"></textarea>
+          <p>抽出した式を確認・修正できます。電荷は Fe³⁺ または Fe^3+ と入力。反応条件は除いてください。</p>
+          <button type="submit" class="secondary-button">式を検査</button>
+          <div id="reactionResult" aria-live="polite"></div>
+        </form>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">選択内容</p>
+            <h2>判定の根拠</h2>
+          </div>
+        </div>
+        <div id="emptyDetail" class="panel-empty detail-empty">
+          <div class="empty-icon" aria-hidden="true">⌖</div>
+          <p>候補またはPDF本文を選ぶと、役割・ページ・書式情報を確認できます。</p>
+        </div>
+        <div id="detail" class="detail" hidden>
+          <span id="detailType" class="detail-type"></span>
+          <h3 id="detailText"></h3>
+          <p id="detailReason" class="detail-reason"></p>
+          <dl class="metadata">
+            <div><dt>ページ</dt><dd id="detailPage"></dd></div>
+            <div><dt>役割</dt><dd id="detailRole"></dd></div>
+            <div><dt>フォント</dt><dd id="detailFont"></dd></div>
+            <div><dt>サイズ</dt><dd id="detailSize"></dd></div>
+            <div><dt>書式</dt><dd id="detailStyle"></dd></div>
+          </dl>
+          <div id="suggestionBox" class="suggestion-box" hidden>
+            <span>推奨候補</span>
+            <strong id="detailSuggestion"></strong>
+          </div>
+          <div id="reviewControls" class="workflow-settings" hidden>
+            <label for="reviewStatus">確認状態</label>
+            <select id="reviewStatus"><option value="unreviewed">未確認</option><option value="fix">要修正</option><option value="accepted">問題なし</option><option value="pending">保留</option></select>
+            <label for="reviewNote">メモ</label><textarea id="reviewNote" rows="3"></textarea>
+          </div>
+          <div id="selectionControls" class="workflow-settings" hidden>
+            <label for="roleSelect">選択した文字要素の役割</label>
+            <select id="roleSelect"><option>本文</option><option>見出し</option><option>化学式</option><option>単位</option><option>番号</option><option>係数</option><option>ページ番号</option><option>キャプション</option></select>
+            <button id="applyRole" type="button">役割を変更して再判定</button>
+            <button id="resetRole" type="button">自動判定に戻す</button>
+            <label for="exclusionScope">検査除外</label><select id="exclusionScope"><option value="text">用語・記号・反応式など（書式検査は続ける）</option><option value="all">すべての検査</option></select>
+            <button id="excludeSelection" type="button">選択した文字要素を除外</button>
+            <p>役割変更・除外は、選択文字を含むPDFの文字要素全体に適用します。</p>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="./app.js?v=18"></script>
+  </body>
+</html>

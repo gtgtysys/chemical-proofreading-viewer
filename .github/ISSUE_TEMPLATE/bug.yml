@@ -1,0 +1,27 @@
+name: 動作不良
+description: PDFを開けない、操作できない、表示が崩れるなど
+title: "[不具合] "
+body:
+  - type: markdown
+    attributes:
+      value: この報告は公開されます。機密PDF、本文が写った画面、校正結果JSON/CSVを添付しないでください。
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: どのボタンをどの順番で操作しましたか？公開可能な自作資料での再現を歓迎します。
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: 起きたこと・期待したこと
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS・ブラウザー・発生日時
+      placeholder: Windows 11 / Chrome / 2026-10-02
+    validations:
+      required: true
