@@ -1,0 +1,13 @@
+name: フィードバック
+description: 気づいたことや改善してほしいこと
+title: "[フィードバック] "
+body:
+  - type: markdown
+    attributes:
+      value: 投稿は公開されます。機密資料の内容は含めないでください。
+  - type: textarea
+    id: feedback
+    attributes:
+      label: 何がどうなりましたか？どうなってほしいですか？
+    validations:
+      required: true

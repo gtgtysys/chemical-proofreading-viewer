@@ -2,7 +2,7 @@ import * as pdfjsLib from "./vendor/pdf.mjs";
 import { formulaChecks } from './formulas.mjs?v=17';
 import { Lexicon } from "./lexicon.mjs?v=18";
 import { checkReaction, findReactionRanges } from "./reactions.mjs?v=17";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks, csvCell, validateSession } from './workflow.mjs?v=17';
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=20';
 import { reactionRows } from './pdf-reactions.mjs?v=17';
 import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=17';
 
@@ -85,7 +85,6 @@ const state = {
   revisionBaseline: null,
   revision: null,
   revisionSignatures: null,
-  saveEnabled: true,
 };
 
 const FALLBACK_DICTIONARY = {
@@ -288,7 +287,6 @@ function analyzeDocument() {
   renderCandidates();
   renderExclusions();
   renderCoverage();
-  saveSession();
   elements.summaryCandidateCount.textContent = state.candidates.length.toLocaleString("ja-JP");
   elements.emptyDetail.hidden = false;
   elements.detail.hidden = true;
@@ -323,7 +321,6 @@ async function openPdf(file) {
     state.fingerprint = [...new Uint8Array(await crypto.subtle.digest('SHA-256', data))].map(n => n.toString(16).padStart(2,'0')).join('');
     state.reviews = {}; state.roles = {}; state.exclusions = {}; state.revision = null; state.revisionSignatures = null;
     $('#revisionPanel').hidden = true;
-    restoreSession();
     state.pdf = await pdfjsLib.getDocument({
       data,
       useSystemFonts: true,
@@ -344,6 +341,7 @@ async function openPdf(file) {
     const extractedItems = state.items.filter((item) => !item.virtual);
     elements.itemCount.textContent = extractedItems.length.toLocaleString("ja-JP");
     elements.reloadButton.disabled = false;
+    elements.searchToggleButton.disabled = false;
     elements.dropZone.hidden = true;
     showToast(`${state.pdf.numPages}ページを解析しました。`);
   } catch (error) {
@@ -461,7 +459,6 @@ async function openPptx(file) {
     state.fingerprint = await fingerprintBytes(buffer);
     state.reviews = {}; state.roles = {}; state.exclusions = {}; state.revision = null; state.revisionSignatures = null;
     $("#revisionPanel").hidden = true;
-    restoreSession();
     const width = Math.min(960, availableDocumentWidth());
     state.pptxPreviewer = window.pptxPreview.init(elements.pages, { width, mode: "list" });
     const presentation = await state.pptxPreviewer.preview(buffer);
@@ -1202,45 +1199,12 @@ function sessionSnapshot() {
     candidates: state.candidates.map(c => ({key: reviewKey(c), type: c.type, text: c.text, reason: c.reason, itemIds: c.itemIds})),
     profile: state.profile, preferences: state.preferences};
 }
-function setSession(value) {
-  state.reviews = value.reviews; state.roles = value.roles; state.exclusions = value.exclusions;
-  if (Object.hasOwn(state.preferences, value.profile) && value.preferences) {
-    for (const [profile,rules] of Object.entries(value.preferences)) {
-      if (Object.hasOwn(state.preferences, profile) && Array.isArray(rules) && rules.every(r => typeof r.variant === 'string' && r.variant && typeof r.preferred === 'string' && r.preferred)) state.preferences[profile] = rules;
-    }
-    state.profile = value.profile;
-  }
-  renderProfile();
-}
-function restoreSession() {
-  try {
-    const saved = localStorage.getItem('chem-review:' + state.fingerprint);
-    if (saved) setSession(validateSession(JSON.parse(saved), state.fingerprint));
-  } catch { $('#saveStatus').textContent = '保存データを読み込めませんでした。JSONからの読み込みも利用できます。'; }
-}
-function saveSession() {
-  if (!state.pdf || !state.fingerprint) return;
-  if (!state.saveEnabled) {$('#saveStatus').textContent='自動保存は停止しています。必要ならJSONで保存してください。';return;}
-  try {
-    localStorage.setItem('chem-review:' + state.fingerprint, JSON.stringify(sessionSnapshot()));
-    localStorage.setItem('chem-profiles', JSON.stringify({profile: state.profile, preferences: state.preferences, saveEnabled: state.saveEnabled}));
-    $('#saveStatus').textContent = '確認状態と比較用の抽出テキストを、このブラウザ内に保存しました。同じ資料を開き直すと復元します。';
-  } catch { $('#saveStatus').textContent = 'ブラウザ内に保存できません。確認データをJSONで保存してください。'; }
-}
-function downloadFile(name, data, type) {
-  $('#exportPreview').hidden=false; $('#exportPreview').open=true;
-  $('#exportText').value=data;
-  $('#exportDescription').textContent=`${name}を作成しました。保存が始まらない場合は、データをコピーしてローカルファイルに保存できます。`;
-  const url = URL.createObjectURL(new Blob([data], {type}));
-  const link = document.createElement('a'); link.href=url; link.download=name; document.body.append(link);link.click();link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
-}
 function addWorkflowCandidates(candidates, lines) {
   const rows=lines.map(line => ({...line, page:line.pageNumber, text: line.text.split('').map((ch,index) => state.exclusions[line.charMap[index]?.itemId] ? ' ' : ch).join('')}));
   function addHit(line, hit, type, label, suggestion) {
     const locations=[hit,...(hit.related || [])];
     const segments=locations.flatMap(location => {
-      const sourceLine=lines[location.line];
+      const sourceLine=location === hit ? line : lines[location.line];
       return sourceLine ? segmentsFromCharacterMap(sourceLine.charMap,location.start,location.length) : [];
     });
     const item=state.items.find(i=>i.id===segments[0]?.itemId);
@@ -1304,7 +1268,7 @@ $('#nextUnreviewed').addEventListener('click',()=>{
 function updateReview() {
   const candidate=state.candidates.find(c=>c.id===state.selectedId);if(!candidate) return;
   state.reviews[reviewKey(candidate)]={status:$('#reviewStatus').value,note:$('#reviewNote').value};
-  saveSession();renderCandidates();
+  renderCandidates();
 }
 $('#reviewStatus').addEventListener('change',updateReview);
 $('#reviewNote').addEventListener('input',updateReview);
@@ -1313,23 +1277,8 @@ $('#resetRole').addEventListener('click',()=>{for(const id of state.selectedItem
 $('#excludeSelection').addEventListener('click',()=>{for(const id of state.selectedItemIds) state.exclusions[id]=$('#exclusionScope').value;analyzeDocument();showToast('検査対象から除外しました。管理欄で解除できます。');});
 $('#profileSelect').addEventListener('change',event=>{state.profile=event.target.value;renderProfile();if(state.pdf) analyzeDocument();});
 $('#applyPreferences').addEventListener('click',()=>{
-  try {state.preferences[state.profile]=parsePreferences($('#preferenceInput').value);if(state.pdf) analyzeDocument();else localStorage.setItem('chem-profiles',JSON.stringify({profile:state.profile,preferences:state.preferences,saveEnabled:state.saveEnabled}));showToast('表記ルールを適用しました。');}
+  try {state.preferences[state.profile]=parsePreferences($('#preferenceInput').value);if(state.pdf) analyzeDocument();showToast('表記ルールを適用しました。');}
   catch(error){showToast(error.message);}
-});
-$('#exportSession').addEventListener('click',()=>{if(state.pdf) downloadFile('校正確認データ.json',JSON.stringify(sessionSnapshot(),null,2),'application/json');});
-$('#sessionInput').addEventListener('change',async event=>{
-  const file=event.target.files?.[0];if(!file || !state.pdf) return;
-  try {setSession(validateSession(JSON.parse(await file.text()),state.fingerprint));analyzeDocument();showToast('確認データを復元しました。');}
-  catch(error){showToast(error.message);} finally{event.target.value='';}
-});
-$('#autoSave').addEventListener('change',event=>{state.saveEnabled=event.target.checked;try{localStorage.setItem('chem-profiles',JSON.stringify({profile:state.profile,preferences:state.preferences,saveEnabled:state.saveEnabled}));}catch{}saveSession();});
-$('#clearSavedSession').addEventListener('click',()=>{state.reviews={};state.roles={};state.exclusions={};state.saveEnabled=false;$('#autoSave').checked=false;$('#exportPreview').hidden=true;$('#exportText').value='';try{localStorage.removeItem('chem-review:'+state.fingerprint);localStorage.setItem('chem-profiles',JSON.stringify({profile:state.profile,preferences:state.preferences,saveEnabled:false}));}catch{}analyzeDocument();showToast('保存状態を消去し、自動保存を停止しました。');});
-$('#copyExport').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('#exportText').value);showToast('書き出しデータをコピーしました。');}catch{$('#exportText').focus();$('#exportText').select();showToast('データを選択しました。Ctrl+Cでコピーしてください。');}});
-$('#exportCsv').addEventListener('click',()=>{
-  if(!state.pdf) return;
-  const rows=[['ファイル','ページ','種類','該当文字列','推奨候補','判定理由','確認状態','メモ']];
-  for(const c of state.candidates) {const review=getReview(c);rows.push([state.file.name,c.pageNumber,c.label,c.text,c.suggestion,c.reason,reviewLabels[review.status],review.note]);}
-  downloadFile('校正結果.csv','\uFEFF'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n'),'text/csv;charset=utf-8');
 });
 $('#updatedPdfInput').addEventListener('change',async event=>{
   const file=event.target.files?.[0];if(!file) return;
@@ -1338,10 +1287,6 @@ $('#updatedPdfInput').addEventListener('change',async event=>{
   await openPdf(file);if(!state.pdf) state.revisionBaseline=null;
   event.target.value='';
 });
-try {
-  const saved=JSON.parse(localStorage.getItem('chem-profiles') || 'null');
-  if(saved && Object.hasOwn(state.preferences,saved.profile)) {setSession({reviews:{},roles:{},exclusions:{},...saved});state.saveEnabled=saved.saveEnabled !== false;$('#autoSave').checked=state.saveEnabled;}
-} catch { /* Local storage is optional; JSON export remains available. */ }
 renderProfile();
 
 function normalizeComparable(value) {
