@@ -6,7 +6,7 @@
     <meta name="description" content="PDF・PPTXを端末内で解析し、化学用語・化学式・書式の候補を確認するビューア" />
     <title>化学PDF校正ビューア</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23102736'/%3E%3Cpath d='M22 12h20v5l-4 7v7l10 16a5 5 0 0 1-4 8H20a5 5 0 0 1-4-8l10-16v-7l-4-7z' fill='none' stroke='%236fd5c2' stroke-width='4'/%3E%3Cpath d='M21 44h22' stroke='%23f0b85a' stroke-width='4'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=20" />
+    <link rel="stylesheet" href="./styles.css?v=22" />
   </head>
   <body>
     <header class="topbar">
@@ -74,6 +74,7 @@
           <button type="button" class="filter" data-filter="format">書式</button>
           <button type="button" class="filter" data-filter="structure">番号・括弧</button>
           <button type="button" class="filter" data-filter="preference">表記統一</button>
+<button type="button" class="filter" data-filter="curriculum">旧課程</button>
         </div>
         <div id="emptyCandidates" class="panel-empty">
           <div class="empty-icon" aria-hidden="true">◎</div>
@@ -145,7 +146,9 @@
             <label for="reviewNote">メモ</label><textarea id="reviewNote" rows="3"></textarea>
           </div>
           <div id="selectionControls" class="workflow-settings" hidden>
-            <label for="roleSelect">選択した文字要素の役割</label>
+            <button id="findSelectedText" type="button">選択した文字を検索</button>
+<button id="findSelectedFont" type="button">同じフォントを検索</button>
+<label for="roleSelect">選択した文字要素の役割</label>
             <select id="roleSelect"><option>本文</option><option>見出し</option><option>化学式</option><option>単位</option><option>番号</option><option>係数</option><option>ページ番号</option><option>キャプション</option></select>
             <button id="applyRole" type="button">役割を変更して再判定</button>
             <button id="resetRole" type="button">自動判定に戻す</button>
@@ -159,6 +162,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="./vendor/pptx-preview/pptx-preview.umd.js"></script>
-  <script type="module" src="./app.js?v=20"></script>
-  <script type="module" src="./feedback.mjs?v=20"></script></body>
+  <script type="module" src="./app.js?v=22"></script>
+  <script type="module" src="./feedback.mjs?v=22"></script></body>
 </html>

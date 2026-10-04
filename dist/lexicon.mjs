@@ -35,7 +35,7 @@ export class Lexicon {
     const suffix=/(?:状態|性|論|法|中|塩|前|後|剤|間|名|種|系|殻|則|版|化|可|数)$/u;
     if([withoutPrefix,word.replace(suffix,''),withoutPrefix.replace(suffix,'')].some(core=>core && this.known.has(core))) return [];
     for(let i=2;i<=word.length-2;i++) if(this.chemicalWords.has(word.slice(0,i)) && this.chemicalWords.has(word.slice(i))) return [];
-    for(const suffix of ['反応','結合','溶液','電極','物質','元素','電子']) if(word.endsWith(suffix) && this.chemicalWords.has(word.slice(0,-suffix.length))) return [];
+    for(const suffix of ['反応','結合','溶液','電極','物質','元素','電子','積']) if(word.endsWith(suffix) && this.chemicalWords.has(word.slice(0,-suffix.length))) return [];
     const short=word.length<4,options=[];
     for(let n=short?word.length:word.length-1;n<=word.length+(short?0:1);n++) {
       for(const entry of this.byLength.get(n)||[]) {
@@ -70,7 +70,8 @@ export class Lexicon {
       const stray=(left[0].length<=1 && right[0].length>=4 && this.known.has(right[0])) || (right[0].length<=1 && left[0].length>=4 && this.known.has(left[0]));
       const compound=[...this.chemicalWords].some(word=>joined.startsWith(word) && this.chemicalWords.has(joined.slice(word.length)));
       const katakana=/^[\p{Script=Katakana}ー]+$/u.test(joined) && left[0].length>=2 && !this.known.has(left[0]) && !this.known.has(right[0]);
-      const known=this.known.has(joined)||compound,options=joined.length>=4 && !stray?this.optionsFor(joined,context):[];
+      const independent=this.known.has(left[0]) && this.known.has(right[0]);
+      const known=this.known.has(joined)||compound,options=joined.length>=4 && !stray && !independent?this.optionsFor(joined,context):[];
       if(known || options.length || katakana) {
         protectedRanges.push([start,end]);
         if(!known && options.length) hits.push({start,length:end-start,text:normalized.slice(start,end),options});

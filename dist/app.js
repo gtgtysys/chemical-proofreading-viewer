@@ -1,10 +1,11 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import { formulaChecks } from './formulas.mjs?v=17';
-import { Lexicon } from "./lexicon.mjs?v=18";
+import { schoolChecks } from './school-checks.mjs?v=22';
+import { formulaChecks } from './formulas.mjs?v=22';
+import { Lexicon } from "./lexicon.mjs?v=22";
 import { checkReaction, findReactionRanges } from "./reactions.mjs?v=17";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=20';
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=22';
 import { reactionRows } from './pdf-reactions.mjs?v=17';
-import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=17';
+import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=22';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
@@ -202,15 +203,6 @@ function inferDocumentRoles() {
     }
   }
   for (const page of state.pages) {
-    const sizes = page.items.map((item) => item.size).filter((size) => size > 0).sort((a, b) => a - b);
-    const medianSize = sizes.length ? sizes[Math.floor(sizes.length / 2)] : 0;
-    for (const item of page.items) {
-      if (item.role !== "test-id" && medianSize > 0 && item.size >= medianSize * 1.25 && item.normalized.length < 100) {
-        item.role = item.role === "本文" ? "見出し" : `見出し内${item.role}`;
-      }
-    }
-  }
-  for (const page of state.pages) {
     const ordered = [...page.items].sort((a, b) => a.rect.top - b.rect.top || a.rect.left - b.rect.left);
     for (let index = 0; index < ordered.length; index += 1) {
       const item = ordered[index];
@@ -245,7 +237,7 @@ function getStyleFlags(font) {
   const value = font.toLowerCase();
   return {
     bold: /bold|black|heavy|demi/.test(value),
-    italic: /italic|oblique/.test(value),
+    italic: /italic|oblique|(?:^|[+\s])(?:cmmi|cmmib|lmmi|cmsl|lmsl)/.test(value),
   };
 }
 
@@ -343,7 +335,7 @@ async function openPdf(file) {
     elements.reloadButton.disabled = false;
     elements.searchToggleButton.disabled = false;
     elements.dropZone.hidden = true;
-    showToast(`${state.pdf.numPages}ページを解析しました。`);
+    showToast(state.items.length ? `${state.pdf.numPages}ページを解析しました。` : "文字データがないため、自動判定できません（画像PDF）。");
   } catch (error) {
     console.error(error);
     state.pdf = null;
@@ -690,6 +682,11 @@ function detectCandidates(items) {
   }
 
   const virtualLines = buildVirtualLines(extractedItems);
+  for(const hit of schoolChecks(virtualLines,extractedItems)) {
+    const segments=segmentsFromCharacterMap(hit.row.charMap,hit.start,hit.length);
+    const item=extractedItems.find(item=>item.id===segments[0]?.itemId);
+    if(item) candidates.push(makeCandidate({item,segments,type:hit.type,label:hit.label,severity:hit.type==='format'?'format':'medium',text:hit.text,suggestion:hit.suggestion,reason:hit.reason}));
+  }
   addWorkflowCandidates(candidates, virtualLines);
   for(const line of virtualLines) for(const hit of formulaChecks(line,extractedItems)) {
     const segments=segmentsFromCharacterMap(line.charMap,hit.start,hit.length);
@@ -722,7 +719,7 @@ function detectCandidates(items) {
 
   // Detection preserves spaces, scripts and row boundaries; search has its own compact index.
   const documentIndex = detectionIndex(virtualLines);
-  const termIndex = detectionIndex(virtualLines,true);
+  const termIndex = detectionIndex(virtualLines,true,true);
   if (state.lexicon) {
     for (const hit of state.lexicon.scan(termIndex.text)) {
       const segments = segmentsForRange(termIndex, hit.start, hit.length);
@@ -778,7 +775,8 @@ function detectCandidates(items) {
             severity: "format",
             text: entry.token,
             suggestion: null,
-            reason: `化学式カテゴリの多数派書式（${dominant[0]}）と異なります。`,
+            reason: styleDifference(entry.item,entries.find(e=>e.signature===dominant[0]).item,"化学式"),
+            segments: tokenSegments(entry.item,entry.token),
           }));
         }
       }
@@ -806,7 +804,8 @@ function detectCandidates(items) {
           severity: "format",
           text: token,
           suggestion: null,
-          reason: `同じ化学式「${token}」の多数派書式（${tokenDominant[0]}）と異なります。`,
+          reason: styleDifference(entry.item,entries.find(e=>e.signature===tokenDominant[0]).item,`化学式「${token}」`),
+          segments: tokenSegments(entry.item,token),
         }));
       }
     }
@@ -850,17 +849,29 @@ function addRoleStyleOutliers(candidates, items, role) {
         severity: "format",
         text: item.text.trim(),
         suggestion: null,
-        reason: `${role}カテゴリの多数派書式（${dominant[0]}）と異なります。`,
+        reason: styleDifference(item,entries.find(e=>styleSignature(e)===dominant[0]),role),
       }));
     }
   }
 }
 
+function tokenSegments(item, token) {
+  const start=item.text.indexOf(token);
+  return [{itemId:item.id,start:Math.max(0,start),end:Math.max(0,start)+token.length,total:item.text.length}];
+}
+function styleDifference(item,reference,role) {
+  const differences=[];
+  if(hasReliableFont(item.font) && hasReliableFont(reference.font) && item.font.replace(/^.*\+/, '')!==reference.font.replace(/^.*\+/, '')) differences.push('フォント：'+item.font.replace(/^.*\+/, '')+'（基準：'+reference.font.replace(/^.*\+/, '')+'）');
+  if(item.bold!==reference.bold) differences.push('太字：'+(item.bold?'あり':'なし')+'（基準：'+(reference.bold?'あり':'なし')+'）');
+  if(item.italic!==reference.italic) differences.push('斜体：'+(item.italic?'あり':'なし')+'（基準：'+(reference.italic?'あり':'なし')+'）');
+  return role+'の同じ用途の多数派と異なります。'+differences.join('。')+'。基準例：'+reference.pageNumber+'ページ「'+reference.text.slice(0,35)+'」。';
+}
+
 function styleSignature(item) {
   const fontPart = hasReliableFont(item.font)
-    ? item.font.replace(/^.*\+/, "").replace(/PSMT|MT$/g, "")
+    ? item.font.replace(/^.*\+/, "").replace(/((?:LMRoman|LMSans|LMMono|cmr|cmmi|cmsy|cmbx|cmss|cmtt))\d+/gi,"$1").replace(/PSMT|MT$/g, "")
     : "フォント情報なし";
-  return `${fontPart} / ${item.size.toFixed(1)}pt${item.bold ? " / 太字" : ""}${item.italic ? " / 斜体" : ""}`;
+  return `${fontPart}${item.bold ? " / 太字" : ""}${item.italic ? " / 斜体" : ""}`;
 }
 
 function isLikelyFormulaToken(token) {
@@ -945,7 +956,7 @@ function renderCandidates() {
   elements.candidateList.replaceChildren();
   elements.candidateCount.textContent = visible.length;
   elements.emptyCandidates.hidden = visible.length > 0;
-  if (!visible.length && state.pdf) elements.emptyCandidates.querySelector("p").textContent = "この条件の候補はありません。";
+  if (!visible.length && state.pdf) elements.emptyCandidates.querySelector("p").textContent = state.items.length ? "この条件の候補はありません。" : "文字データがないため検査できません。文字を含むPDFが必要です。";
 
   for (const candidate of visible) {
     const review = getReview(candidate);
@@ -991,6 +1002,7 @@ function selectCandidate(candidateId) {
   elements.detailPanel.classList.add("open");
   elements.detailType.textContent = candidate.label;
   elements.detailText.textContent = candidate.text;
+  state.selectedText = candidate.text;
   elements.detailReason.textContent = candidate.reason;
   if (candidate.type === 'reaction') {
     $('#reactionInput').value = candidate.text;
@@ -1003,7 +1015,7 @@ function selectCandidate(candidateId) {
   const roles = [...new Set(candidateItems.map((entry) => entry.role).filter((role) => role !== "test-id"))];
   elements.detailPage.textContent = `${pages.length > 1 ? `${pages[0]}–${pages.at(-1)}` : candidate.pageNumber} / ${state.pdf.numPages}`;
   elements.detailRole.textContent = roles.join("・") || candidate.role || item.role;
-  elements.detailFont.textContent = hasReliableFont(item.font) ? item.font : "取得できず（サイズ・書式で比較）";
+  elements.detailFont.textContent = hasReliableFont(item.font) ? item.font : "取得できず（取得できた書式で比較）";
   elements.detailSize.textContent = `${item.size.toFixed(1)} pt`;
   elements.detailStyle.textContent = [item.bold ? "太字" : "標準", item.italic ? "斜体" : null].filter(Boolean).join("・");
   elements.suggestionBox.hidden = !candidate.suggestion;
@@ -1169,6 +1181,7 @@ function showTextSelectionDetails() {
   $('#roleSelect').value = selectedItems[0].role.includes('見出し') ? '見出し' : selectedItems[0].role;
   if (!$('#roleSelect').value) $('#roleSelect').value = '本文';
   const selectedText = selection.toString().replace(/\s+/g, " ").trim();
+  state.selectedText = selectedText;
   const roles = [...new Set(selectedItems.map((item) => item.role).filter((role) => role !== "test-id"))];
   const pages = [...new Set(selectedItems.map((item) => item.pageNumber))];
   const fonts = [...new Set(selectedItems.map((item) => item.font).filter(hasReliableFont))];
@@ -1296,6 +1309,22 @@ function normalizeComparable(value) {
 function escapeHtml(value) {
   return value.replace(/[&<>"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character]));
 }
+
+
+$('#findSelectedText').addEventListener('click',()=>{
+ if(!state.selectedText) return;
+ elements.searchForm.hidden=false;elements.searchToggleButton.setAttribute('aria-expanded','true');
+ elements.searchInput.value=state.selectedText;searchDocument(state.selectedText);
+});
+$('#findSelectedFont').addEventListener('click',()=>{
+ const selected=state.selectedItemIds.map(id=>state.items.find(item=>item.id===id)).filter(Boolean);
+ const fonts=new Set(selected.filter(item=>hasReliableFont(item.font)).map(item=>item.font.replace(/^.*\+/,'')));
+ if(!fonts.size){showToast('フォント名を特定できないため検索できません。');return;}
+ state.searchOccurrences=state.items.filter(item=>!item.virtual && fonts.has(item.font.replace(/^.*\+/,''))).map(item=>({itemIds:[item.id],segments:tokenSegments(item,item.text)}));
+ state.searchCursor=-1;elements.searchForm.hidden=false;elements.searchToggleButton.setAttribute('aria-expanded','true');
+ elements.searchInput.value='';elements.searchInput.placeholder='フォント検索：'+[...fonts].join('・');
+ elements.clearTextSearchButton.hidden=false;updateSearchNavigation();if(state.searchOccurrences.length)goToSearchResult(0);
+});
 
 elements.fileInput.addEventListener("change", (event) => openDocument(event.target.files?.[0]));
 elements.reloadButton.addEventListener("click", () => state.file && openDocument(state.file));

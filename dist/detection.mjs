@@ -25,14 +25,18 @@ export function textRows(items) {
   }
   return result;
 }
-export function detectionIndex(rows,normalize=false) {
-  let text='';const positionAt=[];
+export function detectionIndex(rows,normalize=false,respectParagraphs=false) {
+  let text='';const positionAt=[];let previous;
   for(const row of rows) {
-    if(text){text+='\n';positionAt.push(null);}
+    if(text){
+      const distant=respectParagraphs && previous?.pageNumber===row.pageNumber && (row.rect.top-previous.rect.top>Math.max(row.rect.height,previous.rect.height)*2.8 || Math.abs(row.rect.left-previous.rect.left)>Math.max(row.rect.width,previous.rect.width)*.6);
+      text+=distant?'\n\n':'\n';positionAt.push(null);if(distant)positionAt.push(null);
+    }
     for(let offset=0;offset<row.text.length;offset++) {
       const value=normalize?row.text[offset].normalize('NFKC'):row.text[offset];
       text+=value;for(let i=0;i<value.length;i++) positionAt.push(row.charMap[offset]);
     }
+    previous=row;
   }
   return {text,positionAt};
 }
@@ -55,5 +59,5 @@ export function expectedSubscript(match,segments,items) {
   const sources=segments.map(s=>byId.get(s.itemId)).filter(Boolean);
   if(segments.some(segment=>/[₀-₉]/.test(byId.get(segment.itemId)?.text.slice(segment.start,segment.end) || ''))) return true;
   const baseline=i=>i.rect.top+i.rect.height/1.18;
-  return sources.some(item=>/^\d+$/.test(item.text) && sources.some(base=>/[A-Za-z]/.test(base.text) && item.size<base.size*.88 && baseline(item)>baseline(base)+base.size*.12));
+  return sources.some(item=>/^\d+$/.test(item.text) && sources.some(base=>/[A-Za-z]/.test(base.text) && item.size<base.size*.88 && baseline(item)>baseline(base)+base.rect.height/1.18*.12));
 }
