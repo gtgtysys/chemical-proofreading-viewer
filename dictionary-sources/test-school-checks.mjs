@@ -6,6 +6,7 @@ assert.equal(check('圧力 p、体積 V、絶対温度 T。',true).length,0);
 assert.equal(check('10 mol、300 K、5 s',true).length,3);
 assert.equal(check('10 mol、300 K、5 s').length,0);
 assert.equal(check('イオン積 K',true).length,0);
+assert.equal(check('K1K2',true).length,0,'indices next to equilibrium constants are not numerical unit values');
 assert.equal(check('C(s) + O₂(g) = CO₂(g) + 394 kJ').filter(h=>h.type==='curriculum').length,1);
 for(const delta of ['Δ','∆']) assert.equal(check(`C(s) + O₂(g) = CO₂(g), ${delta}H = -394 kJ/mol`).length,0);
 assert.equal(check('熱化学方程式：C(s) + O₂(g) = CO₂(g) + 394 kJ').length,1);

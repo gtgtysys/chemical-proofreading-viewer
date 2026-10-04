@@ -65,11 +65,13 @@ export function structureChecks(rows) {
   const isChapter=row=>/^(?:化学\s*問題\s*[ⅠⅡⅢⅣⅤIVX]+|第\s*[0-9０-９一二三四五六七八九十]+\s*問)/.test(row.text.replace(/\s/g,''));
   rows.forEach((row,line)=>{
     if(isChapter(row)) chapter++;
+    let captionRow=false;
     for (const m of row.text.matchAll(/(図|表)\s*([0-9０-９]+(?:\s*[−‐‑–—－ー一-]\s*[0-9０-９]+)*)/g)) {
       const key=m[1]+m[2].normalize('NFKC').replace(/[−‐‑–—－ー一]/g,'-').replace(/\s/g,'');
       const tail=row.text.slice(m.index+m[0].length);
       // A title at row start must be separated from its number; prose references are excluded.
-      const title=row.text.slice(0,m.index).trim()==='' && !/^\s*(?:[（(]\s*[0-9０-９a-zA-Z]+\s*[）)]\s*)?(?:の|を|に|は|が|と|で|参照|より|から|(?:中|内|上|下|左|右)(?:の|に|で))/.test(tail);
+      const title=(row.text.slice(0,m.index).trim()==='' || captionRow) && !/^\s*(?:[（(]\s*[0-9０-９a-zA-Z]+\s*[）)]\s*)?(?:の|を|に|は|が|と|で|参照|より|から|(?:中|内|上|下|左|右)(?:の|に|で))/.test(tail);
+      if(title) captionRow=true;
       const hit={line,start:m.index,length:m[0].length,text:m[0],chapter};
       if(title) {
         const previous=definitions.get(key);
@@ -103,7 +105,7 @@ export function structureChecks(rows) {
       if(pairs[ch]) stack.push({ch,line,start,length:1,text:original});
       else if(Object.values(pairs).includes(ch)) {
         if(stack.length && pairs[stack.at(-1).ch]===ch) stack.pop();
-        else if(original!==')') hits.push({line,start,length:1,text:original,reason:'対応する開き括弧を確認できません。本文の読み取り順も確認してください。'});
+        else if(original!==')' && !/^(?:例|例えば)\s*$/.test(row.text.slice(0,start))) hits.push({line,start,length:1,text:original,reason:'対応する開き括弧を確認できません。本文の読み取り順も確認してください。'});
       }
     }
   });

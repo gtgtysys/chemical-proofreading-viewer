@@ -1,11 +1,11 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import { schoolChecks } from './school-checks.mjs?v=26';
-import { formulaChecks } from './formulas.mjs?v=26';
-import { Lexicon } from "./lexicon.mjs?v=26";
-import { checkReaction, findReactionRanges } from "./reactions.mjs?v=26";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=26';
-import { reactionRows } from './pdf-reactions.mjs?v=17';
-import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=26';
+import { schoolChecks } from './school-checks.mjs?v=29';
+import { formulaChecks } from './formulas.mjs?v=29';
+import { Lexicon } from "./lexicon.mjs?v=29";
+import { checkReaction, findReactionRanges } from "./reactions.mjs?v=29";
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=29';
+import { reactionRows } from './pdf-reactions.mjs?v=29';
+import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=29';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
@@ -430,6 +430,13 @@ function extractPptxSlide(slide, pageNumber, pageCount) {
       highlightLayer,
       textLayer,
     };
+    if(Math.abs(item.textDirection.y)>.01) {
+      const {x:dx,y:dy}=item.textDirection,origin=item.textOrigin;
+      const points=[[-scaledHeight,0],[-scaledHeight,scaledWidth],[scaledHeight*.18,0],[scaledHeight*.18,scaledWidth]]
+        .map(([across,along])=>({x:origin.x-dy*across+dx*along,y:origin.y+dx*across+dy*along}));
+      const left=Math.min(...points.map(p=>p.x)),top=Math.min(...points.map(p=>p.y));
+      item.rect={left,top,width:Math.max(...points.map(p=>p.x))-left,height:Math.max(...points.map(p=>p.y))-top};
+    }
     const span = document.createElement("span");
     span.textContent = text;
     span.dataset.itemId = item.id;
@@ -549,6 +556,9 @@ async function renderAndExtractPage(pageNumber) {
       font,
       size,
       emHeight: Math.hypot(tx[2],tx[3]),
+      advance: raw.width * scale,
+      textOrigin: {x:tx[4],y:tx[5]},
+      textDirection: {x:tx[0]/Math.hypot(tx[0],tx[1]),y:tx[1]/Math.hypot(tx[0],tx[1])},
       bold: flags.bold,
       italic: flags.italic,
       role: classifyRole(raw.str, size, flags.bold),

@@ -3,7 +3,11 @@ const superChars = '⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻';
 const plainChars = '0123456789+-';
 function normalized(text) {
   // Preserve charge notation before compatibility normalization removes superscripts.
-  return text.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]+/g, run => '^' + [...run].map(c => plainChars[superChars.indexOf(c)]).join(''))
+  // Remove a detached TeX arrow shaft before removing spaces or normalizing
+  // superscripts. An adjacent electron/ion charge must remain a charge.
+  return text.replace(/(^|\s)[−–-]+\s*(?=[→⟶⇒])/g,'$1')
+    .replace(/(?<=[₀-₉])[−–]\s*(?=[→⟶⇒])/g,'')
+    .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]+/g, run => '^' + [...run].map(c => plainChars[superChars.indexOf(c)]).join(''))
     .normalize('NFKC').replace(/[−–]/g, '-').replace(/\s+/g, '');
 }
 function integer(value) {
@@ -82,7 +86,8 @@ export function checkReaction(input) {
   try {
     if (input.length > 2000) throw Error('式が長すぎます。');
     const text = normalized(input);
-    const sides = text.split(/(?:<=>|<->|->|→|⇄|⇌|↔|⟶|⟷|⇒|=)/);
+    const hasArrow=/(?:<=>|<->|->|→|⇄|⇌|↔|⟶|⟷|⇒)/.test(text);
+    const sides = text.split(hasArrow?/(?:<=>|<->|->|→|⇄|⇌|↔|⟶|⟷|⇒)/:/=/);
     if (sides.length !== 2 || sides.some(s => !s)) throw Error('左右の式と矢印を1つずつ指定してください。');
     const left = side(sides[0]), right = side(sides[1]);
     const rows = [...new Set([...Object.keys(left.atoms), ...Object.keys(right.atoms)])].map(element => ({ element, left: left.atoms[element] || 0, right: right.atoms[element] || 0 }));
@@ -102,7 +107,10 @@ export function findReactionRanges(text) {
   const runs = /[A-Za-z0-9₀-₉⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻+−\-()\[\].·・^=→⇄⇌↔⟶⟷⇒<> \t□＿_?]+/gu;
   for (const m of text.matchAll(runs)) {
     if (!/(?:->|→|⇄|⇌|↔|⟶|⟷|⇒|=)/.test(m[0])) continue;
-    const value = m[0].trim();
+    let value = m[0].trim();
+    // A numbered reaction heading is metadata, not a stoichiometric coefficient.
+    if(/(?:反応|式)\s*$/.test(text.slice(0,m.index))) value=value.replace(/^\d+\s+(?=[A-Z])/,'');
+    if(!/(?:->|→|⇄|⇌|↔|⟶|⟷|⇒)/.test(value) && (value.match(/=/g)||[]).length>1) continue;
     if (!/[A-Z]/.test(value)) continue;
     if(value.split(/(?:->|→|⇄|⇌|↔|⟶|⟷|⇒|=)/).some(side=>!/[A-Z]|e(?:⁻|\^-)/.test(side))) continue;
     // Adjacent carbon/hydrogen fragments joined by '=' are structural double bonds.

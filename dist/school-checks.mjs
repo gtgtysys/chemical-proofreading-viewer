@@ -19,7 +19,9 @@ export function schoolChecks(rows, items) {
     for(const equation of row.text.matchAll(/\bp\s*V\s*[=＝]\s*n\s*R\s*T\b/g)) for(const m of equation[0].matchAll(/[pVnRT]/g)) marked.push({start:equation.index+m.index,length:1,kind:'quantity'});
     for(const m of row.text.matchAll(/(?<![A-Za-z])(?:mol|mmol|kmol|kg|mg|g|mL|L|Pa|kPa|MPa|kJ|J|K|s|m|cm|nm)(?![A-Za-z])/g)) {
       const prefix=row.text.slice(0,m.index);
-      if(/\d[\s·⋅/]*$/.test(prefix) || /(?:mol|kg|g|L|J|C|m)\s*\/\s*$/.test(prefix) || /単位[：:]\s*$/.test(prefix)) marked.push({start:m.index,length:m[0].length,kind:'unit'});
+      // A numerical value must start outside a variable/formula: the 1 in K1K2
+      // is an index, not a temperature value preceding the unit K.
+      if(/(?<![A-Za-z0-9₀-₉])\d+(?:[.,]\d+)?[\s·⋅/]*$/.test(prefix) || /(?:mol|kg|g|L|J|C|m)\s*\/\s*$/.test(prefix) || /単位[：:]\s*$/.test(prefix)) marked.push({start:m.index,length:m[0].length,kind:'unit'});
     }
     const uniqueMarks=[...new Map(marked.map(mark=>[mark.kind+':'+mark.start+':'+mark.length,mark])).values()];
     for(const mark of uniqueMarks) {

@@ -1,5 +1,5 @@
-import {checkFormula} from './reactions.mjs?v=17';
-import {expectedSubscript} from './detection.mjs?v=22';
+import {checkFormula} from './reactions.mjs?v=29';
+import {expectedSubscript} from './detection.mjs?v=29';
 
 // Check the notation of a parsed chemical species, not a list of named compounds.
 export function formulaChecks(row,items) {
@@ -40,8 +40,8 @@ export function formulaChecks(row,items) {
       // Add the other species fragments as baseline references, without treating their
       // Unicode subscripts as evidence about the selected ASCII digit.
       const numeric=segments.map(s=>items.find(i=>i.id===s.itemId)).filter(Boolean);
-      const baseline=i=>i.rect.top+i.rect.height/1.18;
-      const positioned=numeric.length && numeric.every(i=>/^\d+$/.test(i.text) && baseItems.some(b=>/[A-Za-z]/.test(b.text) && i.size<b.size*.88 && baseline(i)>baseline(b)+b.rect.height/1.18*.12));
+      const baseline=i=>i.textOrigin?.y ?? i.rect.top+i.rect.height/1.18;
+      const positioned=numeric.length && numeric.every(i=>/^\d+$/.test(i.text) && baseItems.some(b=>/[A-Za-z]/.test(b.text) && i.size<b.size*.88 && baseline(i)>baseline(b)+(b.emHeight ?? b.rect.height/1.18)*.08));
       if(!positioned && !expectedSubscript(digits[0],segments,items)) needsSubscript=true;
     }
     if(needsSubscript) hits.push({start:match.index,length:token.length,text:token,

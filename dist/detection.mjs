@@ -3,20 +3,27 @@ export function textRows(items) {
   for(const item of items) {if(!pages.has(item.pageNumber)) pages.set(item.pageNumber,[]);pages.get(item.pageNumber).push(item);}
   for(const [pageNumber,pageItems] of pages) {
     const rows=[];
+    const axis=item=>item.textDirection || {x:1,y:0};
+    const origin=item=>item.textOrigin || {x:item.rect.left,y:item.rect.top+item.rect.height/1.18};
+    const along=item=>{const d=axis(item),p=origin(item);return p.x*d.x+p.y*d.y;};
+    const across=item=>{const d=axis(item),p=origin(item);return -p.x*d.y+p.y*d.x;};
     for(const item of [...pageItems].sort((a,b)=>a.rect.top-b.rect.top || a.rect.left-b.rect.left)) {
-      let row=rows.find(r=>Math.abs(r.top-item.rect.top)<=Math.max(3,item.rect.height*.32));
-      if(!row){row={top:item.rect.top,items:[]};rows.push(row);}row.items.push(item);
+      const direction=axis(item),cross=across(item);
+      let row=rows.find(r=>r.direction.x*direction.x+r.direction.y*direction.y>.995 && Math.abs(r.cross-cross)<=(item.emHeight ?? item.rect.height/1.18)*.38);
+      if(!row){row={cross,direction,items:[]};rows.push(row);}row.items.push(item);
     }
+    rows.sort((a,b)=>Math.min(...a.items.map(i=>i.rect.top))-Math.min(...b.items.map(i=>i.rect.top)));
     rows.forEach((row,rowIndex)=>{
-      row.items.sort((a,b)=>a.rect.left-b.rect.left);
+      row.items.sort((a,b)=>along(a)-along(b));
       let text='';const charMap=[];let previous;
       for(const item of row.items) {
-        const gap=previous?item.rect.left-(previous.rect.left+previous.rect.width):0;
+        const gap=previous?along(item)-(along(previous)+(previous.advance ?? previous.rect.width)):0;
         // Coordinates are in displayed pixels; item.size is in PDF points.
         // Compare gaps with displayed em heights so fitting/zooming cannot
         // join a following quantity into a formula (H2S2O7 + 1.00 mol, etc.).
         const emHeight=i=>i.emHeight ?? i.rect.height/1.18;
-        if(previous && gap>Math.min(emHeight(item),emHeight(previous))*.35) {text+=' ';charMap.push(null);}
+        const quantityAfterSubscript=previous && /^\d+$/.test(previous.text) && /^\d/.test(item.text) && emHeight(item)>emHeight(previous)*1.25 && across(item)<across(previous)-emHeight(item)*.08;
+        if(previous && (gap>Math.min(emHeight(item),emHeight(previous))*.35 || quantityAfterSubscript)) {text+=' ';charMap.push(null);}
         text+=item.text;
         for(let offset=0;offset<item.text.length;offset++) charMap.push({itemId:item.id,offset,total:item.text.length});
         previous=item;
@@ -62,6 +69,6 @@ export function expectedSubscript(match,segments,items) {
   const byId=new Map(items.map(i=>[i.id,i]));
   const sources=segments.map(s=>byId.get(s.itemId)).filter(Boolean);
   if(segments.some(segment=>/[₀-₉]/.test(byId.get(segment.itemId)?.text.slice(segment.start,segment.end) || ''))) return true;
-  const baseline=i=>i.rect.top+i.rect.height/1.18;
-  return sources.some(item=>/^\d+$/.test(item.text) && sources.some(base=>/[A-Za-z]/.test(base.text) && item.size<base.size*.88 && baseline(item)>baseline(base)+base.rect.height/1.18*.12));
+  const baseline=i=>i.textOrigin?.y ?? i.rect.top+i.rect.height/1.18;
+  return sources.some(item=>/^\d+$/.test(item.text) && sources.some(base=>/[A-Za-z]/.test(base.text) && item.size<base.size*.88 && baseline(item)>baseline(base)+(base.emHeight ?? base.rect.height/1.18)*.08));
 }
