@@ -1,11 +1,11 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import { schoolChecks } from './school-checks.mjs?v=22';
-import { formulaChecks } from './formulas.mjs?v=22';
-import { Lexicon } from "./lexicon.mjs?v=22";
-import { checkReaction, findReactionRanges } from "./reactions.mjs?v=17";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=22';
+import { schoolChecks } from './school-checks.mjs?v=24';
+import { formulaChecks } from './formulas.mjs?v=24';
+import { Lexicon } from "./lexicon.mjs?v=24";
+import { checkReaction, findReactionRanges } from "./reactions.mjs?v=24";
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=24';
 import { reactionRows } from './pdf-reactions.mjs?v=17';
-import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=22';
+import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=24';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
@@ -321,6 +321,8 @@ async function openPdf(file) {
       standardFontDataUrl: new URL('./vendor/standard_fonts/',import.meta.url).href,
       wasmUrl: new URL('./vendor/wasm/',import.meta.url).href,
     }).promise;
+    const metadata=await state.pdf.getMetadata().catch(()=>null);
+    state.isOcrReconstruction=/OCR_TRANSCRIPTION/.test(metadata?.info?.Subject||'');
     elements.pageCount.textContent = state.pdf.numPages;
     for (let pageNumber = 1; pageNumber <= state.pdf.numPages; pageNumber += 1) {
       elements.loadingText.textContent = `${pageNumber} / ${state.pdf.numPages} ページを解析しています`;
@@ -355,6 +357,7 @@ function availableDocumentWidth() {
 function resetDocumentState(file, type) {
   state.file = file;
   state.documentType = type;
+  state.isOcrReconstruction = false;
   state.pdf = null;
   state.pages = [];
   state.items = [];
@@ -529,7 +532,7 @@ async function renderAndExtractPage(pageNumber) {
     const fontRef = raw.fontName;
     let fontObj = null;
     try { fontObj = page.commonObjs.get(fontRef); } catch { /* font metadata is optional */ }
-    const font = fontLabel(fontObj, textContent.styles?.[fontRef], fontRef);
+    const font = state.isOcrReconstruction ? "不明" : fontLabel(fontObj, textContent.styles?.[fontRef], fontRef);
     const flags = getStyleFlags(font);
     const size = Math.max(1, Math.hypot(raw.transform[2], raw.transform[3]));
     const item = {
@@ -1253,9 +1256,10 @@ function renderCoverage() {
   const corrupted=state.pages.filter(p=>p.items.some(i=>/[\uFFFD\u0000]/.test(i.text))).map(p=>p.pageNumber);
   const uncertain=state.items.filter(i=>!i.virtual && !hasReliableFont(i.font)).length;
   const notes=[];
+  if(state.isOcrReconstruction) notes.push('OCR照合版です。候補はOCRの読み違いを含むため原画像と照合してください。元のフォント・斜体は復元されていません。');
   if(missing.length) notes.push(`文字を抽出できないページ：${missing.join('、')}。画像内の文字は検査できません。`);
   if(corrupted.length) notes.push(`文字化けの疑いがあるページ：${corrupted.join('、')}。`);
-  if(uncertain) notes.push(`フォント名を特定できない文字要素が${uncertain}件あります。書式比較はサイズなどの情報で行います。`);
+  if(uncertain) notes.push(`フォント名を特定できない文字要素が${uncertain}件あります。元のフォント名に基づく比較はできません。`);
   notes.push('画像内の式・文字は検査対象外です。指摘ゼロは検査完了を保証しません。');
   $('#coverageReport').textContent=notes.join(' ');
 }

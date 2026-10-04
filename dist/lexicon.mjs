@@ -14,7 +14,9 @@ export class Lexicon {
   constructor(chemistry, general) {
     if(!Array.isArray(chemistry.entries) || !Array.isArray(general.words)) throw Error('語彙辞書の形式が不正です');
     this.terms=chemistry.entries.map(e=>({...e,key:normalize(e.term)}));
-    this.known=new Set([...general.words.map(normalize),...this.terms.map(e=>e.key)]);
+    // Independently curated valid school-chemistry vocabulary, used only to protect correct text.
+    const supplementary=['水層','有機層','混合液','反応率','呈色反応','ガラス板','活物質','オリゴ糖','生成量','ケイ酸塩','ケイ酸塩ガラス'];
+    this.known=new Set([...general.words.map(normalize),...this.terms.map(e=>e.key),...supplementary]);
     this.mixedStems=new Set([...this.known].map(word=>word.match(/^[\p{Script=Han}]+[\p{Script=Hiragana}]/u)?.[0]).filter(Boolean));
     this.chemicalWords=new Set(this.terms.map(e=>e.key));
     this.byLength=new Map();
@@ -25,14 +27,29 @@ export class Lexicon {
       this.byLength.get(e.key.length).push(e);
     }
   }
+  knownCompound(word) {
+    // A known general word plus a chemistry word may still be a misspelling
+    // of one full term (e.g. 眼鏡 + 反応). Do not let segmentation hide it.
+    if(word.length>=4 && [word.length-1,word.length,word.length+1].some(n=>(this.byLength.get(n)||[]).some(entry=>oneEdit(word,entry.key)))) return false;
+    // Recognize phrases made of attested words, with at least one chemistry term.
+    // Each component has two or more characters; arbitrary trailing letters are not accepted.
+    const reachable=Array.from({length:word.length+1},()=>new Set());reachable[0].add(0);
+    for(let start=0;start<word.length;start++) for(const flags of reachable[start]) {
+      for(let end=start+2;end<=Math.min(word.length,start+32);end++) {
+        const part=word.slice(start,end);if(this.known.has(part)) reachable[end].add(flags|1|(this.chemicalWords.has(part)?2:0)|(start?4:0));
+      }
+      if(start && /^(?:内|側|比|度|群|基|鎖|率|時|量)$/.test(word.slice(start))) reachable[word.length].add(flags|4);
+    }
+    return [...reachable[word.length]].some(flags=>(flags&6)===6);
+  }
   optionsFor(word,context='') {
-    if(this.known.has(word)) return [];
+    if(this.known.has(word) || this.knownCompound(word)) return [];
     // Productive oligomer terminology: e.g. 二量体 -> 二量化. Require the
     // corresponding dictionary-attested oligomer, rather than a PDF-specific exception.
     if(/^[二三四五六七八九十多]+量化$/u.test(word) && this.known.has(word.slice(0,-1)+'体')) return [];
     if(/^[一二三四五六七八九十百千万]+[行列回個本枚冊点組種章節項段桁]$/u.test(word)) return [];
-    const withoutPrefix=word.replace(/^(?:第?[一二三四五六七八九十]+次|問|熱|逆|非|主|両|半|型|万)/u,'');
-    const suffix=/(?:状態|性|論|法|中|塩|前|後|剤|間|名|種|系|殻|則|版|化|可|数)$/u;
+    const withoutPrefix=word.replace(/^(?:第?[一二三四五六七八九十]+次|問|熱|逆|非|主|両|半|型|万|総|各|低|高)/u,'');
+    const suffix=/(?:状態|性|論|法|中|塩|前|後|剤|間|名|種|系|殻|則|版|化|可|数|内|側|比|度|群|基|鎖|率)$/u;
     if([withoutPrefix,word.replace(suffix,''),withoutPrefix.replace(suffix,'')].some(core=>core && this.known.has(core))) return [];
     for(let i=2;i<=word.length-2;i++) if(this.chemicalWords.has(word.slice(0,i)) && this.chemicalWords.has(word.slice(i))) return [];
     for(const suffix of ['反応','結合','溶液','電極','物質','元素','電子','積']) if(word.endsWith(suffix) && this.chemicalWords.has(word.slice(0,-suffix.length))) return [];
@@ -51,6 +68,26 @@ export class Lexicon {
   scan(text) {
     const normalized=normalize(text),hits=[],protectedRanges=[];
     const runs=[...normalized.matchAll(/[\p{Script=Han}\p{Script=Katakana}ー]{1,}/gu)];
+    // Protect complete dictionary words split by PDF spacing without creating typo suggestions.
+    // Use whole runs at both ends so a genuine extra character is not hidden.
+    for(let i=0;i<runs.length;i++) {
+      let joined=runs[i][0];
+      for(let j=i+1;j<Math.min(runs.length,i+8);j++) {
+        const prev=runs[j-1],gap=normalized.slice(prev.index+prev[0].length,runs[j].index);
+        if(!/^[ \t]*(?:\n[ \t]*)?$/.test(gap) || !gap.length) break;
+        joined+=runs[j][0];if(joined.length>40) break;
+        if(this.known.has(joined) || this.knownCompound(joined)) protectedRanges.push([runs[i].index,runs[j].index+runs[j][0].length]);
+      }
+    }
+    for(const chain of normalized.matchAll(/[\p{Script=Han}\p{Script=Katakana}ー]+(?:[ \t]+[\p{Script=Han}\p{Script=Katakana}ー]+)+/gu)) {
+      const positions=[];let compact='';
+      for(let n=0;n<chain[0].length;n++) if(!/[ \t]/.test(chain[0][n])) {compact+=chain[0][n];positions.push(chain.index+n);}
+      for(let start=0;start<compact.length;start++) for(let length=2;length<=Math.min(32,compact.length-start);length++) {
+        const end=start+length-1;
+        if(positions[end]-positions[start]+1===length) continue;
+        if(this.known.has(compact.slice(start,start+length))) protectedRanges.push([positions[start],positions[end]+1]);
+      }
+    }
     // Join complete script runs only over a line boundary. Both known words and typo candidates
     // retain their original span so highlights cover both lines without shifting later offsets.
     for(let i=0;i<runs.length-1;i++) {

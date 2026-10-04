@@ -61,17 +61,19 @@ export function parsePreferences(text) {
   });
 }
 export function structureChecks(rows) {
-  const hits=[], definitions=new Map(), mentions=[];
+  const hits=[], definitions=new Map(), mentions=[];let chapter=0;
+  const isChapter=row=>/^(?:化学\s*問題\s*[ⅠⅡⅢⅣⅤIVX]+|第\s*[0-9０-９一二三四五六七八九十]+\s*問)/.test(row.text.replace(/\s/g,''));
   rows.forEach((row,line)=>{
-    for (const m of row.text.matchAll(/(図|表)\s*([0-9０-９]+)/g)) {
-      const key=m[1]+m[2].normalize('NFKC');
+    if(isChapter(row)) chapter++;
+    for (const m of row.text.matchAll(/(図|表)\s*([0-9０-９]+(?:\s*[−‐‑–—－ー一-]\s*[0-9０-９]+)*)/g)) {
+      const key=m[1]+m[2].normalize('NFKC').replace(/[−‐‑–—－ー一]/g,'-').replace(/\s/g,'');
       const tail=row.text.slice(m.index+m[0].length);
       // A title at row start must be separated from its number; prose references are excluded.
-      const title=row.text.slice(0,m.index).trim()==='' && !/^\s*(?:の|を|に|は|が|と|で|参照|より|から)/.test(tail);
-      const hit={line,start:m.index,length:m[0].length,text:m[0]};
+      const title=row.text.slice(0,m.index).trim()==='' && !/^\s*(?:[（(]\s*[0-9０-９a-zA-Z]+\s*[）)]\s*)?(?:の|を|に|は|が|と|で|参照|より|から)/.test(tail);
+      const hit={line,start:m.index,length:m[0].length,text:m[0],chapter};
       if(title) {
         const previous=definitions.get(key);
-        if(previous && (rows[previous.line].page===undefined || rows[previous.line].page===row.page)) hits.push({...hit,related:[previous],reason:`「${key}」の見出しが重複しています。1つ目と2つ目を両方ハイライトします。`});
+        if(previous && previous.chapter===chapter && (rows[previous.line].page===undefined || rows[previous.line].page===row.page)) hits.push({...hit,related:[previous],reason:`「${key}」の見出しが重複しています。1つ目と2つ目を両方ハイライトします。`});
         definitions.set(key,hit);
       } else mentions.push({...hit,key});
     }
@@ -79,8 +81,12 @@ export function structureChecks(rows) {
   for(const mention of mentions) if(!definitions.has(mention.key)) hits.push({...mention,reason:`「${mention.key}」の図表見出しをテキストから確認できません。画像内の見出し・別冊への参照も確認してください。`});
   const numbers=new Map();let previousNumber=0;
   rows.forEach((row,line)=>{
+    if(isChapter(row)) {numbers.clear();previousNumber=0;}
     const match=row.text.match(/^\s*(?:大問|問題|問)\s*([0-9０-９]+)(?=\s|[.．:：、]|$)/);
     if(!match) return;
+    if(/^\s*(?:に|を|の|は|と|で)/.test(row.text.slice(match[0].length))) return;
+    // Lists such as "問1、問2に答えよ" are instructions, not question headings.
+    if(/^\s*[、,，]\s*(?:問\s*[0-9０-９]+\s*[、,，]?\s*)+(?:に|を|の|は)/.test(row.text.slice(match[0].length))) return;
     const key=match[1].normalize('NFKC');
     if(Number(key)===1 && (previousNumber>1 || rows[line-1]?.page!==row.page)) numbers.clear();
     const current={line,start:match.index,length:match[0].length,text:match[0],page:row.page};

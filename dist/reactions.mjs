@@ -105,6 +105,8 @@ export function findReactionRanges(text) {
     const value = m[0].trim();
     if (!/[A-Z]/.test(value)) continue;
     if(value.split(/(?:->|→|⇄|⇌|↔|⟶|⟷|⇒|=)/).some(side=>!/[A-Z]|e(?:⁻|\^-)/.test(side))) continue;
+    // Adjacent carbon/hydrogen fragments joined by '=' are structural double bonds.
+    if(/(?:C|H)[₀-₉0-9]*=(?:C|H)/.test(value) && !/[→⇄⇌↔⟶⟷⇒+]/.test(value) && !/\((?:s|l|g|aq)\)/.test(value)) continue;
     const result=checkReaction(value);
     // '=' is common in algebra. Automatic checking requires chemical species evidence.
     const strong=/(?:[A-Z][a-z](?:[A-Z]|[0-9₀-₉⁺⁻])|[A-Z][0-9₀-₉]|[A-Z][a-z]?[⁺⁻]|[A-Z][a-z]?\^\d*[+-]|e[⁻]|e\^-)/.test(value);

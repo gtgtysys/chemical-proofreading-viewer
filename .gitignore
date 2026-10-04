@@ -28,3 +28,5 @@
 __pycache__/
 node_modules/
 !/dictionary-sources/test-school-checks.mjs
+
+!/dictionary-sources/test-full-corpus.mjs
