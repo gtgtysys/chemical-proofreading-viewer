@@ -1,11 +1,11 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import { schoolChecks } from './school-checks.mjs?v=24';
-import { formulaChecks } from './formulas.mjs?v=24';
-import { Lexicon } from "./lexicon.mjs?v=24";
-import { checkReaction, findReactionRanges } from "./reactions.mjs?v=24";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=24';
+import { schoolChecks } from './school-checks.mjs?v=26';
+import { formulaChecks } from './formulas.mjs?v=26';
+import { Lexicon } from "./lexicon.mjs?v=26";
+import { checkReaction, findReactionRanges } from "./reactions.mjs?v=26";
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=26';
 import { reactionRows } from './pdf-reactions.mjs?v=17';
-import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=24';
+import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=26';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
@@ -196,9 +196,18 @@ function classifyRole(text, size, bold) {
 function inferDocumentRoles() {
   // Uniformly bold text rows are headings/emphasis; a single bold formula within a normal row is not.
   const byId=new Map(state.items.map(item=>[item.id,item]));
+  const bodySizes=new Map();
+  for(const page of state.pages) {
+    const sizes=page.items.filter(item=>item.role==='本文' && /[\p{Script=Han}\p{Script=Hiragana}]/u.test(item.text) && item.text.trim().length>=2).map(item=>item.size).sort((a,b)=>a-b);
+    if(sizes.length>=3) bodySizes.set(page.pageNumber,sizes[Math.floor(sizes.length/2)]);
+  }
   for(const row of textRows(state.items)) {
     const members=row.sourceIds.map(id=>byId.get(id)).filter(item=>item.role!=='test-id');
-    if(/[\p{Script=Han}\p{Script=Hiragana}]/u.test(row.text) && members.length && members.every(item=>item.bold)) {
+    // Size is a role cue only, never a mismatch warning. Japanese Gothic headings
+    // can use a Medium face whose PDF font name does not carry a Bold flag.
+    const page=state.pages.find(page=>page.pageNumber===row.pageNumber),bodySize=bodySizes.get(row.pageNumber);
+    const titleShape=bodySize && page && row.rect.top<page.viewport.height*.22 && row.text.trim().length<=60 && !/[。．、，,：:=＝→]/.test(row.text) && members.every(item=>item.size>bodySize*1.3);
+    if(/[\p{Script=Han}\p{Script=Hiragana}]/u.test(row.text) && members.length && (members.every(item=>item.bold) || titleShape)) {
       for(const item of members) item.role=item.role==='本文'?'見出し':`見出し内${item.role}`;
     }
   }
@@ -321,8 +330,6 @@ async function openPdf(file) {
       standardFontDataUrl: new URL('./vendor/standard_fonts/',import.meta.url).href,
       wasmUrl: new URL('./vendor/wasm/',import.meta.url).href,
     }).promise;
-    const metadata=await state.pdf.getMetadata().catch(()=>null);
-    state.isOcrReconstruction=/OCR_TRANSCRIPTION/.test(metadata?.info?.Subject||'');
     elements.pageCount.textContent = state.pdf.numPages;
     for (let pageNumber = 1; pageNumber <= state.pdf.numPages; pageNumber += 1) {
       elements.loadingText.textContent = `${pageNumber} / ${state.pdf.numPages} ページを解析しています`;
@@ -357,7 +364,6 @@ function availableDocumentWidth() {
 function resetDocumentState(file, type) {
   state.file = file;
   state.documentType = type;
-  state.isOcrReconstruction = false;
   state.pdf = null;
   state.pages = [];
   state.items = [];
@@ -532,7 +538,7 @@ async function renderAndExtractPage(pageNumber) {
     const fontRef = raw.fontName;
     let fontObj = null;
     try { fontObj = page.commonObjs.get(fontRef); } catch { /* font metadata is optional */ }
-    const font = state.isOcrReconstruction ? "不明" : fontLabel(fontObj, textContent.styles?.[fontRef], fontRef);
+    const font = fontLabel(fontObj, textContent.styles?.[fontRef], fontRef);
     const flags = getStyleFlags(font);
     const size = Math.max(1, Math.hypot(raw.transform[2], raw.transform[3]));
     const item = {
@@ -542,6 +548,7 @@ async function renderAndExtractPage(pageNumber) {
       normalized: normalizeText(raw.str),
       font,
       size,
+      emHeight: Math.hypot(tx[2],tx[3]),
       bold: flags.bold,
       italic: flags.italic,
       role: classifyRole(raw.str, size, flags.bold),
@@ -1256,7 +1263,6 @@ function renderCoverage() {
   const corrupted=state.pages.filter(p=>p.items.some(i=>/[\uFFFD\u0000]/.test(i.text))).map(p=>p.pageNumber);
   const uncertain=state.items.filter(i=>!i.virtual && !hasReliableFont(i.font)).length;
   const notes=[];
-  if(state.isOcrReconstruction) notes.push('OCR照合版です。候補はOCRの読み違いを含むため原画像と照合してください。元のフォント・斜体は復元されていません。');
   if(missing.length) notes.push(`文字を抽出できないページ：${missing.join('、')}。画像内の文字は検査できません。`);
   if(corrupted.length) notes.push(`文字化けの疑いがあるページ：${corrupted.join('、')}。`);
   if(uncertain) notes.push(`フォント名を特定できない文字要素が${uncertain}件あります。元のフォント名に基づく比較はできません。`);

@@ -12,7 +12,11 @@ export function textRows(items) {
       let text='';const charMap=[];let previous;
       for(const item of row.items) {
         const gap=previous?item.rect.left-(previous.rect.left+previous.rect.width):0;
-        if(previous && gap>Math.max(2,Math.min(item.size,previous.size)*.35)) {text+=' ';charMap.push(null);}
+        // Coordinates are in displayed pixels; item.size is in PDF points.
+        // Compare gaps with displayed em heights so fitting/zooming cannot
+        // join a following quantity into a formula (H2S2O7 + 1.00 mol, etc.).
+        const emHeight=i=>i.emHeight ?? i.rect.height/1.18;
+        if(previous && gap>Math.min(emHeight(item),emHeight(previous))*.35) {text+=' ';charMap.push(null);}
         text+=item.text;
         for(let offset=0;offset<item.text.length;offset++) charMap.push({itemId:item.id,offset,total:item.text.length});
         previous=item;

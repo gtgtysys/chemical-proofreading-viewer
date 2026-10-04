@@ -15,7 +15,7 @@ export class Lexicon {
     if(!Array.isArray(chemistry.entries) || !Array.isArray(general.words)) throw Error('語彙辞書の形式が不正です');
     this.terms=chemistry.entries.map(e=>({...e,key:normalize(e.term)}));
     // Independently curated valid school-chemistry vocabulary, used only to protect correct text.
-    const supplementary=['水層','有機層','混合液','反応率','呈色反応','ガラス板','活物質','オリゴ糖','生成量','ケイ酸塩','ケイ酸塩ガラス'];
+    const supplementary=['水層','有機層','混合液','反応率','呈色反応','ガラス板','活物質','オリゴ糖','生成量','ケイ酸塩','ケイ酸塩ガラス','水酸化マンガン'];
     this.known=new Set([...general.words.map(normalize),...this.terms.map(e=>e.key),...supplementary]);
     this.mixedStems=new Set([...this.known].map(word=>word.match(/^[\p{Script=Han}]+[\p{Script=Hiragana}]/u)?.[0]).filter(Boolean));
     this.chemicalWords=new Set(this.terms.map(e=>e.key));

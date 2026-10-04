@@ -69,7 +69,7 @@ export function structureChecks(rows) {
       const key=m[1]+m[2].normalize('NFKC').replace(/[−‐‑–—－ー一]/g,'-').replace(/\s/g,'');
       const tail=row.text.slice(m.index+m[0].length);
       // A title at row start must be separated from its number; prose references are excluded.
-      const title=row.text.slice(0,m.index).trim()==='' && !/^\s*(?:[（(]\s*[0-9０-９a-zA-Z]+\s*[）)]\s*)?(?:の|を|に|は|が|と|で|参照|より|から)/.test(tail);
+      const title=row.text.slice(0,m.index).trim()==='' && !/^\s*(?:[（(]\s*[0-9０-９a-zA-Z]+\s*[）)]\s*)?(?:の|を|に|は|が|と|で|参照|より|から|(?:中|内|上|下|左|右)(?:の|に|で))/.test(tail);
       const hit={line,start:m.index,length:m[0].length,text:m[0],chapter};
       if(title) {
         const previous=definitions.get(key);
