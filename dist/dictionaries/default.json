@@ -1,75 +1,38 @@
 {
   "schemaVersion": 1,
   "name": "標準化学辞書",
-  "description": "一般的な化学教材向けの初期規則。組織固有の表記は別ファイルで追加できます。",
-  "terms": [
-    {
-      "incorrect": "眼鏡反応",
-      "preferred": "銀鏡反応",
-      "reason": "化学反応名としては「銀鏡反応」の可能性があります。",
-      "severity": "high"
-    }
-  ],
-  "patterns": [
-    {
-      "type": "symbol",
-      "label": "類似文字",
-      "pattern": "NaCI",
-      "flags": "g",
-      "suggestion": "NaCl",
-      "reason": "塩素の元素記号は大文字Cと小文字lです。",
-      "severity": "high"
-    },
-    {
-      "type": "symbol",
-      "label": "類似文字",
-      "pattern": "A\\s*[ΙI]\\s*Cl[₀-₉0-9]*",
-      "flags": "g",
-      "suggestion": "AlCl₃",
-      "reason": "Alの小文字lが、大文字Iまたはギリシャ文字Ιになっている可能性があります。",
-      "severity": "high"
-    },
-    {
-      "type": "symbol",
-      "label": "類似文字",
-      "pattern": "\\bC0\\b",
-      "flags": "g",
-      "suggestion": "CO",
-      "reason": "一酸化炭素のOが数字の0になっている可能性があります。",
-      "severity": "high"
-    },
-    {
-      "type": "formula",
-      "label": "化学式",
-      "pattern": "\\bH2O\\b",
-      "flags": "g",
-      "suggestion": "H₂O",
-      "reason": "数字2が下付きではなく通常位置にある可能性があります。PDF内の座標も確認してください。",
-      "severity": "medium"
-    },
-    {
-      "type": "formula",
-      "label": "化学式",
-      "pattern": "SO₄\\s*2\\s*-",
-      "flags": "g",
-      "suggestion": "SO₄²⁻",
-      "reason": "イオンの電荷は上付きで表すのが一般的です。",
-      "severity": "medium"
-    },
-    {
-      "type": "formula",
-      "label": "化学式",
-      "pattern": "塩化鉄\\s*\\(III\\)[^。]{0,80}FeCl₂",
-      "flags": "g",
-      "suggestion": "塩化鉄(III)：FeCl₃",
-      "reason": "物質名の酸化数と化学式の添字が一致していません。",
-      "severity": "high"
-    }
-  ],
+  "description": "単位と書式判定の設定。個別一致ルールはindividual-rules.json、追加正表記はcommunity-vocabulary.jsonで管理。",
+  "terms": [],
+  "patterns": [],
   "units": [
-    "mol/L", "mmol/L", "mol L⁻¹", "mmol L⁻¹", "mg/mL", "μg/mL",
-    "kg", "g", "mg", "μg", "L", "mL", "μL", "m", "cm", "mm", "nm",
-    "s", "min", "h", "K", "℃", "°C", "Pa", "kPa", "MPa", "atm", "pH"
+    "mol/L",
+    "mmol/L",
+    "mol L⁻¹",
+    "mmol L⁻¹",
+    "mg/mL",
+    "μg/mL",
+    "kg",
+    "g",
+    "mg",
+    "μg",
+    "L",
+    "mL",
+    "μL",
+    "m",
+    "cm",
+    "mm",
+    "nm",
+    "s",
+    "min",
+    "h",
+    "K",
+    "℃",
+    "°C",
+    "Pa",
+    "kPa",
+    "MPa",
+    "atm",
+    "pH"
   ],
   "style": {
     "minimumFormulaSamples": 5,

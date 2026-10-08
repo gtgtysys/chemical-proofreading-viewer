@@ -1,11 +1,11 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import { schoolChecks } from './school-checks.mjs?v=29';
-import { formulaChecks } from './formulas.mjs?v=29';
-import { Lexicon } from "./lexicon.mjs?v=29";
-import { checkReaction, findReactionRanges } from "./reactions.mjs?v=29";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=29';
-import { reactionRows } from './pdf-reactions.mjs?v=29';
-import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=29';
+import { schoolChecks } from './school-checks.mjs?v=30';
+import { formulaChecks } from './formulas.mjs?v=30';
+import { Lexicon } from "./lexicon.mjs?v=30";
+import { checkReaction, findReactionRanges } from "./reactions.mjs?v=30";
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=30';
+import { reactionRows } from './pdf-reactions.mjs?v=30';
+import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=30';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
@@ -72,6 +72,7 @@ const state = {
   dictionary: null,
   lexicon: null,
   generalLexicon: null,
+  additionalVocabulary: {entries: []},
   rules: { term: [], symbol: [], formula: [] },
   units: [],
   styleSettings: { minimumFormulaSamples: 5, rareStyleRatio: 0.08, minimumRoleSamples: 3 },
@@ -91,7 +92,7 @@ const state = {
 const FALLBACK_DICTIONARY = {
   schemaVersion: 1,
   name: "内蔵最小辞書",
-  terms: [{ incorrect: "眼鏡反応", preferred: "銀鏡反応", reason: "化学反応名としては「銀鏡反応」の可能性があります。", severity: "high" }],
+  terms: [],
   patterns: [],
   units: ["mol/L", "mmol/L", "mg/mL", "kg", "g", "mg", "L", "mL", "℃", "°C", "min", "pH"],
   style: { minimumFormulaSamples: 5, rareStyleRatio: 0.08, minimumRoleSamples: 3 },
@@ -108,7 +109,7 @@ function escapeRegExp(value) {
 
 function compileDictionary(dictionary) {
   if (dictionary.schemaVersion === 2 && Array.isArray(dictionary.entries)) {
-    state.lexicon = new Lexicon(dictionary, state.generalLexicon);
+    state.lexicon = new Lexicon(dictionary, state.generalLexicon, state.additionalVocabulary);
     elements.dictionaryStatus.textContent = `化学${dictionary.entries.length}語＋一般語`;
     return;
   }
@@ -147,17 +148,21 @@ async function loadDefaultDictionary() {
   try {
     const response = await fetch("./dictionaries/default.json", { cache: "no-store" });
     if (!response.ok) throw new Error(`辞書を読み込めません (${response.status})`);
-    compileDictionary(await response.json());
-    // Legacy term substitutions are replaced by source-attested vocabulary matching.
-    state.rules.term = [];
-    const [chemistry, general] = await Promise.all([
+    const base = await response.json();
+    const individualResponse = await fetch('./dictionaries/individual-rules.json', {cache:'no-store'});
+    if(!individualResponse.ok) throw Error('個別ルール取得失敗');
+    const individual = await individualResponse.json();
+    compileDictionary({...base, terms:individual.terms, patterns:individual.patterns});
+    const [chemistry, general, additions] = await Promise.all([
       fetch('./dictionaries/school-chemistry.json').then(r => { if(!r.ok) throw Error('化学辞書取得失敗'); return r.json(); }),
       fetch('./dictionaries/general-runtime.json').then(r => { if(!r.ok) throw Error('一般語辞書取得失敗'); return r.json(); }),
+      fetch('./dictionaries/community-vocabulary.json', {cache:'no-store'}).then(r => { if(!r.ok) throw Error('追加語彙取得失敗'); return r.json(); }),
     ]);
     state.generalLexicon = general;
-    state.lexicon = new Lexicon(chemistry, general);
+    state.additionalVocabulary = additions;
+    state.lexicon = new Lexicon(chemistry, general, additions);
     elements.dictionaryStatus.textContent = `化学${chemistry.entries.length}語＋一般${general.words.length.toLocaleString()}表記`;
-    elements.dictionaryStatus.title = '正表記辞書で照合。一般語: JMdict / EDRDG (CC BY-SA 4.0)';
+    elements.dictionaryStatus.title = '正表記・追加語彙で照合。個別一致ルールは別ファイル。一般語: JMdict / EDRDG (CC BY-SA 4.0)';
   } catch (error) {
     console.warn(error);
     compileDictionary(FALLBACK_DICTIONARY);

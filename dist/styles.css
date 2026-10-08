@@ -262,3 +262,6 @@ button, label { -webkit-tap-highlight-color: transparent; }
   body { display: grid; grid-template-rows: auto minmax(0,1fr); }
   .workspace { height: auto; }
 }
+
+#dictionaryProposalForm input { width:100%; box-sizing:border-box; padding:8px; font:inherit; }
+#dictionaryProposalLink[aria-disabled='true'] { opacity:.5; pointer-events:none; }

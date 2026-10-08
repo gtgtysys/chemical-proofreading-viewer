@@ -30,3 +30,5 @@ node_modules/
 !/dictionary-sources/test-school-checks.mjs
 
 !/dictionary-sources/test-full-corpus.mjs
+!/dictionary-sources/register-vocabulary.mjs
+!/dictionary-sources/test-dictionary-proposals.mjs

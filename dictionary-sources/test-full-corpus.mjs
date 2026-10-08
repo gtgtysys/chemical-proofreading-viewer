@@ -5,7 +5,7 @@ import {findReactionRanges} from '../dist/reactions.mjs';
 import {structureChecks} from '../dist/workflow.mjs';
 import {textRows} from '../dist/detection.mjs';
 const read=name=>JSON.parse(fs.readFileSync(new URL('../dist/dictionaries/'+name,import.meta.url),'utf8'));
-const lex=new Lexicon(read('school-chemistry.json'),read('general-runtime.json'));
+const lex=new Lexicon(read('school-chemistry.json'),read('general-runtime.json'),read('community-vocabulary.json'));
 for(const text of ['水層','有機層','混合液','反応率','呈色反応','ガラス板','活物質','オリゴ糖','原子核内','物質量比','総物質量','生成物側','各異性体','炭化水素鎖','低分子量','沸点上昇度','化合物群','ケイ 酸塩 ガラス','ナトリ ウム 水溶液','アルデヒ ド','炭 化 水 素','中和滴\n定','銀鏡反 応','ケイ 素原子','反応 開始時','アミ ド結合']) assert.equal(lex.scan(text).length,0,text);
 for(const [text,term] of [['硫酢','硫酸'],['銀鏡反応応','銀鏡反応'],['中和適\n定','中和滴定'],['カルポキシ基','カルボキシ基']]) assert(lex.scan(text).some(c=>c.options.some(o=>o.term===term)),text);
 for(const text of ['H₂C=CH','CH=CH₂','H₂C=C','(C=C-C=C)','H₂C = CH−CH = CH₂','CH₂ = CH₂']) assert.equal(findReactionRanges(text).length,0,text);

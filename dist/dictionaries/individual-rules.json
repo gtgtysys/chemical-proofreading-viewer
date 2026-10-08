@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "name": "個別の表記一致ルール",
+  "description": "一般的な構造・文脈判定とは別の補助規則。特定表記への一致で検出する。",
+  "terms": [],
+  "patterns": [
+    {
+      "type": "symbol",
+      "label": "類似文字",
+      "pattern": "NaCI",
+      "flags": "g",
+      "suggestion": "NaCl",
+      "reason": "個別ルール：塩素の元素記号は大文字Cと小文字lです。",
+      "severity": "high"
+    },
+    {
+      "type": "symbol",
+      "label": "類似文字",
+      "pattern": "A\\s*[ΙI]\\s*Cl[₀-₉0-9]*",
+      "flags": "g",
+      "suggestion": "AlCl₃",
+      "reason": "個別ルール：Alの小文字lが、大文字Iまたはギリシャ文字Ιになっている可能性があります。",
+      "severity": "high"
+    },
+    {
+      "type": "symbol",
+      "label": "類似文字",
+      "pattern": "\\bC0\\b",
+      "flags": "g",
+      "suggestion": "CO",
+      "reason": "個別ルール：一酸化炭素のOが数字の0になっている可能性があります。",
+      "severity": "high"
+    },
+    {
+      "type": "formula",
+      "label": "化学式",
+      "pattern": "\\bH2O\\b",
+      "flags": "g",
+      "suggestion": "H₂O",
+      "reason": "個別ルール：数字2が下付きではなく通常位置にある可能性があります。PDF内の座標も確認してください。",
+      "severity": "medium"
+    },
+    {
+      "type": "formula",
+      "label": "化学式",
+      "pattern": "SO₄\\s*2\\s*-",
+      "flags": "g",
+      "suggestion": "SO₄²⁻",
+      "reason": "個別ルール：イオンの電荷は上付きで表すのが一般的です。",
+      "severity": "medium"
+    },
+    {
+      "type": "formula",
+      "label": "化学式",
+      "pattern": "塩化鉄\\s*\\(III\\)[^。]{0,80}FeCl₂",
+      "flags": "g",
+      "suggestion": "塩化鉄(III)：FeCl₃",
+      "reason": "個別ルール：物質名の酸化数と化学式の添字が一致していません。",
+      "severity": "high"
+    }
+  ]
+}

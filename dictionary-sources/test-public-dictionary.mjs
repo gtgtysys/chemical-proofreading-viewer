@@ -19,7 +19,7 @@ for(const e of chem.entries) {
 for(const term of ['銀鏡反応','中和滴定','アボガドロ定数','電気陰性度','モル濃度','溶解度積','付加重合']) {
  assert(chem.entries.some(e=>e.term===term && e.candidateEligible),term);
 }
-const lex=new Lexicon(chem,general);
+const lex=new Lexicon(chem,general,JSON.parse(fs.readFileSync(new URL('../dist/dictionaries/community-vocabulary.json',import.meta.url),'utf8')));
 for(const text of ['アルミニウ\n3\nムは金属である。','エテン','水酸化マグネシウム','ガラス棒','二量化を行う反応。']) assert.equal(lex.scan(text).length,0,text);
 assert(lex.scan('銀鏡反応応を観察する。').some(h=>h.options.some(e=>e.term==='銀鏡反応')));
 const isolated=new Lexicon({entries:[{term:'検証化合物',candidateEligible:false}]},{words:[]});

@@ -1,0 +1,19 @@
+name: 正しい語を辞書に追加
+description: 正しい語が誤字として指摘されたときの辞書追加提案
+title: "[辞書追加] "
+body:
+  - type: markdown
+    attributes:
+      value: 投稿は公開されます。機密資料の文章は貼らず、追加したい語だけを書いてください。確認後に辞書へ反映します。
+  - type: input
+    id: term
+    attributes:
+      label: 追加する正しい語
+      placeholder: マンガン酸カリウム
+    validations:
+      required: true
+  - type: textarea
+    id: note
+    attributes:
+      label: 説明（任意）
+      description: 正しい語と判断した理由や、どんな誤検出だったか。
