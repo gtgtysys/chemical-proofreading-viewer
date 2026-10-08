@@ -6,7 +6,7 @@
     <meta name="description" content="PDF・PPTXを端末内で解析し、化学用語・化学式・書式の候補を確認するビューア" />
     <title>化学PDF校正ビューア</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23102736'/%3E%3Cpath d='M22 12h20v5l-4 7v7l10 16a5 5 0 0 1-4 8H20a5 5 0 0 1-4-8l10-16v-7l-4-7z' fill='none' stroke='%236fd5c2' stroke-width='4'/%3E%3Cpath d='M21 44h22' stroke='%23f0b85a' stroke-width='4'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=30" />
+    <link rel="stylesheet" href="./styles.css?v=31" />
   </head>
   <body>
     <header class="topbar">
@@ -14,7 +14,7 @@
         <div class="brand-mark" aria-hidden="true">⌬</div>
         <div>
           <h1>化学PDF校正ビューア</h1>
-          <p><a id="feedbackLink" href="https://github.com/gtgtysys/chemical-proofreading-viewer/issues/new?template=feedback.yml" target="_blank" rel="noopener noreferrer" style="color:inherit">フィードバック</a> · <a href="./about.html" target="_blank" rel="noopener noreferrer" style="color:inherit">辞書・利用条件</a></p>
+          <p><a id="feedbackLink" target="_blank" rel="noopener noreferrer" style="color:inherit">フィードバック</a> · <a href="./about.html" target="_blank" rel="noopener noreferrer" style="color:inherit">辞書・利用条件</a></p>
         </div>
       </div>
       <div class="top-actions">
@@ -146,9 +146,9 @@
             <input id="dictionaryProposalTerm" maxlength="80" autocomplete="off" required>
             <label for="dictionaryProposalNote">説明（任意）</label>
             <textarea id="dictionaryProposalNote" rows="2" maxlength="1000"></textarea>
-            <p>投稿は公開されます。機密資料の文章は含めないでください。</p>
+            <p>ログイン不要です。機密資料の文章は含めないでください。</p>
             <p id="dictionaryProposalError" role="status"></p>
-            <a id="dictionaryProposalLink" target="_blank" rel="noopener noreferrer">GitHubで登録する</a>
+            <a id="dictionaryProposalLink" target="_blank" rel="noopener noreferrer">報告フォームで送る</a>
             <button id="closeDictionaryProposal" type="button">閉じる</button>
           </form>
           <div id="reviewControls" class="workflow-settings" hidden>
@@ -173,6 +173,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="./vendor/pptx-preview/pptx-preview.umd.js"></script>
-  <script type="module" src="./app.js?v=30"></script>
-  <script type="module" src="./feedback.mjs?v=30"></script></body>
+  <script type="module" src="./app.js?v=31"></script>
+  <script type="module" src="./feedback.mjs?v=31"></script></body>
 </html>

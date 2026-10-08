@@ -25,7 +25,10 @@ jobs:
           python - <<'PY'
           import json, os
           from pathlib import Path
-          Path('dist/site-config.json').write_text(json.dumps({'repository': os.environ['REPOSITORY']}), encoding='utf-8')
+          config_path = Path('dist/site-config.json')
+          config = json.loads(config_path.read_text(encoding='utf-8'))
+          config['repository'] = os.environ['REPOSITORY']
+          config_path.write_text(json.dumps(config, ensure_ascii=False), encoding='utf-8')
           PY
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
