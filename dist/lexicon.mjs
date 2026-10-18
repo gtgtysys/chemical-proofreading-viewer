@@ -79,21 +79,24 @@ export class Lexicon {
   scan(text) {
     const normalized=normalize(text),hits=[],protectedRanges=[];
     const runs=[...normalized.matchAll(/[\p{Script=Han}\p{Script=Katakana}ー]{1,}/gu)];
-    // Protect complete dictionary words split by PDF spacing without creating typo suggestions.
+    // Protect attested words across PDF spacing, including CRLF and paragraph separators.
+    // A geometric paragraph guess must not turn part of a correct word into a typo.
     // Use whole runs at both ends so a genuine extra character is not hidden.
     for(let i=0;i<runs.length;i++) {
       let joined=runs[i][0];
       for(let j=i+1;j<Math.min(runs.length,i+8);j++) {
         const prev=runs[j-1],gap=normalized.slice(prev.index+prev[0].length,runs[j].index);
-        if(!/^[ \t]*(?:\n[ \t]*)?$/.test(gap) || !gap.length) break;
+        if(!/^[ \t\r\n]+$/.test(gap)) break;
         joined+=runs[j][0];if(joined.length>40) break;
         const suspiciousRun=runs.slice(i,j+1).some(run=>run[0].length>=4 && this.optionsFor(run[0],'化学用語').length);
-        if(this.known.has(joined) || !suspiciousRun && this.knownCompound(joined)) protectedRanges.push([runs[i].index,runs[j].index+runs[j][0].length]);
+        const span=normalized.slice(runs[i].index,runs[j].index+runs[j][0].length);
+        const paragraph=/\n[ \t\r]*\n/.test(span);
+        if(this.known.has(joined) || !paragraph && !suspiciousRun && this.knownCompound(joined)) protectedRanges.push([runs[i].index,runs[j].index+runs[j][0].length]);
       }
     }
-    for(const chain of normalized.matchAll(/[\p{Script=Han}\p{Script=Katakana}ー]+(?:[ \t]+[\p{Script=Han}\p{Script=Katakana}ー]+)+/gu)) {
+    for(const chain of normalized.matchAll(/[\p{Script=Han}\p{Script=Katakana}ー]+(?:[ \t\r\n]+[\p{Script=Han}\p{Script=Katakana}ー]+)+/gu)) {
       const positions=[];let compact='';
-      for(let n=0;n<chain[0].length;n++) if(!/[ \t]/.test(chain[0][n])) {compact+=chain[0][n];positions.push(chain.index+n);}
+      for(let n=0;n<chain[0].length;n++) if(!/[ \t\r\n]/.test(chain[0][n])) {compact+=chain[0][n];positions.push(chain.index+n);}
       for(let start=0;start<compact.length;start++) for(let length=2;length<=Math.min(32,compact.length-start);length++) {
         const end=start+length-1;
         if(positions[end]-positions[start]+1===length) continue;
@@ -110,8 +113,12 @@ export class Lexicon {
         for(let a=1;a<=Math.min(32,left[0].length);a++) for(let b=1;b<=Math.min(32-a,right[0].length);b++) if(this.known.has(left[0].slice(-a)+right[0].slice(0,b))) protectedRanges.push([left.index+left[0].length-a,right.index+b]);
       }
       const detachedNumber=/^[ \t]*\n[ \t]*\d{1,3}[ \t]*\n[ \t]*$/.test(gap);
-      if(!/^[ \t]*\n[ \t]*$/.test(gap) && !detachedNumber) continue;
+      if(!/^[ \t\r]*\n(?:[ \t\r]*\n)*[ \t\r]*$/.test(gap) && !detachedNumber) continue;
+      const paragraph=/\n[ \t\r]*\n/.test(gap);
       const joined=left[0]+right[0],start=left.index,end=right.index+right[0].length;
+      // A longer attested word may span three or more rows. Do not re-check
+      // a pair of its fragments as an independent misspelled word.
+      if(protectedRanges.some(([s,e])=>start>=s && end<=e)) continue;
       const suspiciousSide=[left[0],right[0]].some(word=>word.length>=4 && this.optionsFor(word,'化学用語').length);
       for(let a=1;a<=Math.min(32,left[0].length);a++) for(let b=1;b<=Math.min(32-a,right[0].length);b++) {
         const boundary=left[0].slice(-a)+right[0].slice(0,b);
@@ -127,7 +134,9 @@ export class Lexicon {
       const compound=[...this.chemicalWords].some(word=>joined.startsWith(word) && this.chemicalWords.has(joined.slice(word.length)));
       const katakana=/^[\p{Script=Katakana}ー]+$/u.test(joined) && left[0].length>=2 && !this.known.has(left[0]) && !this.known.has(right[0]);
       const independent=this.known.has(left[0]) && this.known.has(right[0]);
-      const known=this.known.has(joined)||compound,options=joined.length>=4 && !stray && !independent?this.optionsFor(joined,context):[];
+      // Paragraph geometry is uncertain: protect a complete attested spelling or
+      // an unknown katakana continuation, but do not invent a typo across paragraphs.
+      const known=this.known.has(joined)||compound,options=!paragraph && joined.length>=4 && !stray && !independent?this.optionsFor(joined,context):[];
       if(known || options.length || katakana) {
         protectedRanges.push([start,end]);
         if(!known && options.length) hits.push({start,length:end-start,text:normalized.slice(start,end),options});

@@ -1,11 +1,11 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import { schoolChecks } from './school-checks.mjs?v=32';
-import { formulaChecks } from './formulas.mjs?v=32';
-import { Lexicon } from "./lexicon.mjs?v=32";
-import { checkReaction, findReactionRanges } from "./reactions.mjs?v=32";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=32';
-import { reactionRows } from './pdf-reactions.mjs?v=32';
-import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=32';
+import { schoolChecks } from './school-checks.mjs?v=33';
+import { formulaChecks } from './formulas.mjs?v=33';
+import { Lexicon } from "./lexicon.mjs?v=33";
+import { checkReaction, findReactionRanges } from "./reactions.mjs?v=33";
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=33';
+import { reactionRows } from './pdf-reactions.mjs?v=33';
+import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=33';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
