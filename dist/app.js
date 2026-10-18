@@ -1,11 +1,12 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import { schoolChecks } from './school-checks.mjs?v=34';
-import { formulaChecks } from './formulas.mjs?v=34';
-import { Lexicon } from "./lexicon.mjs?v=34";
-import { checkReaction, findReactionRanges } from "./reactions.mjs?v=34";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=34';
-import { reactionRows } from './pdf-reactions.mjs?v=34';
-import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=34';
+import { schoolChecks } from './school-checks.mjs?v=35';
+import { curriculumChecks } from './curriculum.mjs?v=35';
+import { formulaChecks } from './formulas.mjs?v=35';
+import { Lexicon } from "./lexicon.mjs?v=35";
+import { checkReaction, findReactionRanges } from "./reactions.mjs?v=35";
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=35';
+import { reactionRows } from './pdf-reactions.mjs?v=35';
+import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=35';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
@@ -72,6 +73,7 @@ const state = {
   dictionary: null,
   lexicon: null,
   generalLexicon: null,
+  curriculumPolicy: {schemaVersion:1,entries:[]},
   additionalVocabulary: {entries: []},
   rules: { term: [], symbol: [], formula: [] },
   units: [],
@@ -153,13 +155,15 @@ async function loadDefaultDictionary() {
     if(!individualResponse.ok) throw Error('個別ルール取得失敗');
     const individual = await individualResponse.json();
     compileDictionary({...base, terms:individual.terms, patterns:individual.patterns});
-    const [chemistry, general, additions] = await Promise.all([
+    const [chemistry, general, additions, curriculumPolicy] = await Promise.all([
       fetch('./dictionaries/school-chemistry.json').then(r => { if(!r.ok) throw Error('化学辞書取得失敗'); return r.json(); }),
       fetch('./dictionaries/general-runtime.json').then(r => { if(!r.ok) throw Error('一般語辞書取得失敗'); return r.json(); }),
       fetch('./dictionaries/community-vocabulary.json', {cache:'no-store'}).then(r => { if(!r.ok) throw Error('追加語彙取得失敗'); return r.json(); }),
+      fetch('./dictionaries/curriculum-review.json', {cache:'no-store'}).then(r => { if(!r.ok) throw Error('教科書改訂ルール取得失敗'); return r.json(); }),
     ]);
     state.generalLexicon = general;
     state.additionalVocabulary = additions;
+    state.curriculumPolicy = curriculumPolicy;
     state.lexicon = new Lexicon(chemistry, general, additions);
     elements.dictionaryStatus.textContent = `化学${chemistry.entries.length}語＋一般${general.words.length.toLocaleString()}表記`;
     elements.dictionaryStatus.title = '正表記・追加語彙で照合。個別一致ルールは別ファイル。一般語: JMdict / EDRDG (CC BY-SA 4.0)';
@@ -707,6 +711,12 @@ function detectCandidates(items) {
   }
 
   const virtualLines = buildVirtualLines(extractedItems);
+  const proseBlocks = textFlows(virtualLines,extractedItems,state.pages);
+  for(const hit of curriculumChecks(proseBlocks,state.curriculumPolicy)) {
+    const segments=segmentsFromCharacterMap(hit.row.charMap,hit.start,hit.length);
+    const item=extractedItems.find(item=>item.id===segments[0]?.itemId);
+    if(item) candidates.push(makeCandidate({item,segments,type:'curriculum',label:hit.label,severity:'medium',text:hit.text,suggestion:hit.suggestion,reason:hit.reason,ruleId:hit.ruleId,ruleKind:hit.ruleKind}));
+  }
   for(const hit of schoolChecks(virtualLines,extractedItems)) {
     const segments=segmentsFromCharacterMap(hit.row.charMap,hit.start,hit.length);
     const item=extractedItems.find(item=>item.id===segments[0]?.itemId);
@@ -744,7 +754,6 @@ function detectCandidates(items) {
 
   // Detection preserves spaces, scripts and row boundaries; search has its own compact index.
   const documentIndex = detectionIndex(virtualLines);
-  const proseBlocks = textFlows(virtualLines,extractedItems,state.pages);
   // Vocabulary sees reconstructed prose, not PDF row breaks. Hard block
   // boundaries prevent a neighbouring heading, column or table becoming a word.
   if (state.lexicon) {
@@ -754,6 +763,9 @@ function detectCandidates(items) {
       const segments = segmentsForRange(termIndex, hit.start, hit.length);
       const item = extractedItems.find(e => e.id === segments[0]?.itemId);
       if (!item) continue;
+      // A specific editorial rule already explains this exact span more clearly
+      // than a second, generic spelling-neighbour warning.
+      if(candidates.some(candidate=>candidate.type==='curriculum' && candidate.ruleKind==='term' && normalizeComparable(candidate.text)===normalizeComparable(hit.text) && segments.every(segment=>candidate.segments.some(s=>s.itemId===segment.itemId && s.start<=segment.start && s.end>=segment.end)))) continue;
       const names = [...new Set(hit.options.map(e=>e.term))];
       candidates.push(makeCandidate({item,segments,type:'term',label:'用語候補',severity:'medium',text:hit.text,
         suggestion:names.join(' ／ '),reason:`正表記辞書の「${names.join('・')}」と1文字の挿入・脱落・置換の差があります。誤りとは断定しません。`}));
@@ -925,7 +937,7 @@ function isLikelyFormulaToken(token) {
   return elementCount > 0;
 }
 
-function makeCandidate({ item, itemIds, segments, type, label, severity, text, suggestion, reason }) {
+function makeCandidate({ item, itemIds, segments, type, label, severity, text, suggestion, reason, ruleId, ruleKind }) {
   const resolvedSegments = segments?.length
     ? segments
     : [{ itemId: item.id, start: 0, end: item.text.length, total: item.text.length }];
@@ -942,6 +954,8 @@ function makeCandidate({ item, itemIds, segments, type, label, severity, text, s
     severity,
     suggestion,
     reason,
+    ruleId,
+    ruleKind,
     role: item.role,
   };
 }

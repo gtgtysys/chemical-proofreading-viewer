@@ -1,0 +1,270 @@
+{
+  "schemaVersion": 1,
+  "name": "教科書改訂・教材表記の確認",
+  "scope": "2026-10-18のフィードバックで指定された高校化学教材の表記方針。科学的な誤りの自動断定ではない。",
+  "entries": [
+    {
+      "id": "ion-formula",
+      "kind": "term",
+      "terms": [
+        "イオン式"
+      ],
+      "preferred": "化学式",
+      "note": "イオン式は科学的な誤りという意味ではなく、この教材の呼称を統一する確認です。"
+    },
+    {
+      "id": "ionic-equation",
+      "kind": "term",
+      "terms": [
+        "イオン反応式"
+      ],
+      "preferred": "イオンを含む反応式",
+      "note": "教材内の反応式の呼称を統一します。"
+    },
+    {
+      "id": "half-reaction",
+      "kind": "term",
+      "terms": [
+        "半反応式"
+      ],
+      "preferred": "イオンと電子を含む反応式",
+      "note": "半反応式という用語自体は使用可です。イオンを含む反応式と呼称をそろえる場合の任意の確認です。",
+      "label": "表記統一の確認（任意）"
+    },
+    {
+      "id": "bond-line",
+      "kind": "term",
+      "terms": [
+        "価標"
+      ],
+      "preferred": "線・結合",
+      "note": "図や文章の意味に応じて表現を選んでください。"
+    },
+    {
+      "id": "noble-gas",
+      "kind": "term",
+      "terms": [
+        "希ガス"
+      ],
+      "preferred": "貴ガス",
+      "note": "教材の用語を貴ガスへ統一します。"
+    },
+    {
+      "id": "covalent-crystal",
+      "kind": "term",
+      "terms": [
+        "共有結晶",
+        "共有結合結晶"
+      ],
+      "preferred": "共有結合の結晶",
+      "note": "共有結合による結晶を表す用語を統一します。"
+    },
+    {
+      "id": "metal-crystal",
+      "kind": "term",
+      "terms": [
+        "金属の結晶"
+      ],
+      "preferred": "金属結晶",
+      "note": "教材の用語を統一します。"
+    },
+    {
+      "id": "absolute-mass",
+      "kind": "term",
+      "terms": [
+        "絶対質量"
+      ],
+      "preferred": "相対質量",
+      "note": "絶対質量と相対質量は同じ量ではありません。語の置換だけで済ませず、設問・単位・数値を確認してください。"
+    },
+    {
+      "id": "molten-salt",
+      "kind": "term",
+      "terms": [
+        "融解塩電解"
+      ],
+      "preferred": "溶融塩電解",
+      "note": "教材の用語を統一します。"
+    },
+    {
+      "id": "hexagonal",
+      "kind": "term",
+      "terms": [
+        "六方最密充填"
+      ],
+      "preferred": "六方最密構造",
+      "note": "教材の用語を統一します。"
+    },
+    {
+      "id": "combination",
+      "kind": "term",
+      "terms": [
+        "化合"
+      ],
+      "preferred": "反応",
+      "note": "化合物は対象外です。化合して化合物ができるという説明も、反応の説明として見直します。",
+      "excludeFollowing": "物"
+    },
+    {
+      "id": "reaction-heat",
+      "kind": "term",
+      "terms": [
+        "反応熱"
+      ],
+      "preferred": "反応エンタルピー",
+      "note": "従来の反応熱と符号が逆になる場合があります。名称だけでなく符号・数値・式を確認してください。"
+    },
+    {
+      "id": "thermochemical",
+      "kind": "term",
+      "terms": [
+        "熱化学方程式"
+      ],
+      "preferred": "ΔHを含む化学反応式",
+      "note": "熱量を右辺に足して等号で結ぶ旧表記は見直し、反応式とΔHによる表記・計算へ変更します。"
+    },
+    {
+      "id": "mass-action",
+      "kind": "term",
+      "terms": [
+        "質量作用の法則"
+      ],
+      "preferred": "化学平衡の法則",
+      "note": "教材の用語を統一します。"
+    },
+    {
+      "id": "gas-volume-law",
+      "kind": "term",
+      "terms": [
+        "気体反応の法則"
+      ],
+      "preferred": "反応体積比の法則",
+      "note": "気体同士が一定の体積比で反応する法則の呼称を統一します。"
+    },
+    {
+      "id": "constant-composition",
+      "kind": "term",
+      "terms": [
+        "定比例の法則"
+      ],
+      "preferred": "一定組成の法則",
+      "note": "化合物の元素組成が一定であることを表す法則です。"
+    },
+    {
+      "id": "multiple-composition",
+      "kind": "term",
+      "terms": [
+        "倍数比例の法則"
+      ],
+      "preferred": "倍数組成の法則",
+      "note": "原子数が整数比となる多様な元素組成を表す法則です。"
+    },
+    {
+      "id": "amphoteric",
+      "kind": "term",
+      "terms": [
+        "両性元素"
+      ],
+      "preferred": "物質に応じて両性金属・両性酸化物など",
+      "note": "両性は物質の性質として説明します。両性金属・両性酸化物は対象外です。"
+    },
+    {
+      "id": "ferric-hydroxide",
+      "kind": "term",
+      "terms": [
+        "Fe(OH)3"
+      ],
+      "preferred": "水酸化鉄(Ⅲ)",
+      "note": "この教材方針では水酸化鉄(Ⅲ)の組成をFe(OH)3と断定する化学式や三価の弱塩基としての使用を見直します。物質名としての使用は可です。"
+    },
+    {
+      "id": "hydroxy",
+      "kind": "term",
+      "terms": [
+        "ヒドロキシル基",
+        "水酸基"
+      ],
+      "preferred": "ヒドロキシ基",
+      "note": "官能基の呼称を統一します。"
+    },
+    {
+      "id": "carboxy",
+      "kind": "term",
+      "terms": [
+        "カルボキシル基"
+      ],
+      "preferred": "カルボキシ基",
+      "note": "官能基の呼称を統一します。"
+    },
+    {
+      "id": "formyl",
+      "kind": "term",
+      "terms": [
+        "アルデヒド基"
+      ],
+      "preferred": "ホルミル基",
+      "note": "官能基の呼称を統一します。物質の分類であるアルデヒドは対象外です。"
+    },
+    {
+      "id": "carbonyl",
+      "kind": "term",
+      "terms": [
+        "ケトン基"
+      ],
+      "preferred": "カルボニル基",
+      "note": "官能基の呼称を統一します。物質の分類であるケトンは対象外です。"
+    },
+    {
+      "id": "transition-state",
+      "kind": "term",
+      "terms": [
+        "活性化状態"
+      ],
+      "preferred": "遷移状態",
+      "note": "活性化エネルギーは対象外です。"
+    },
+    {
+      "id": "cis-trans",
+      "kind": "term",
+      "terms": [
+        "幾何異性体"
+      ],
+      "preferred": "シス-トランス異性体",
+      "note": "教材の用語を統一します。"
+    },
+    {
+      "id": "enantiomer",
+      "kind": "term",
+      "terms": [
+        "光学異性体"
+      ],
+      "preferred": "鏡像異性体",
+      "note": "教材の用語を統一します。"
+    },
+    {
+      "id": "deposition",
+      "kind": "deposition",
+      "preferred": "凝華",
+      "note": "気体から固体への変化は凝華にします。固体から気体への昇華は対象外です。"
+    },
+    {
+      "id": "alkaline-earth",
+      "kind": "alkaline-earth",
+      "preferred": "2族元素すべてをアルカリ土類金属とする",
+      "note": "Be・Mgを除くことがある、という注記付きの説明は使用可です。分類の説明を確認してください。"
+    },
+    {
+      "id": "transition-elements",
+      "kind": "transition-elements",
+      "preferred": "3～12族元素（教材の定義を確認）",
+      "note": "投稿された教材方針での分類です。12族を含める場合と含めない場合がある、という注記は使用可です。国際的な定義と一律に同一視しません。"
+    },
+    {
+      "id": "standard-conditions",
+      "kind": "standard-conditions",
+      "preferred": "冒頭に標準状態（0 ℃、1.013×10⁵ Pa）を明記",
+      "note": "投稿された教材方針に従い、問題冒頭の温度と圧力の条件を確認してください。文中の標準状態という語だけでは条件を確認済みとしません。",
+      "label": "冒頭の標準状態の確認"
+    }
+  ]
+}
