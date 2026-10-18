@@ -33,3 +33,4 @@ node_modules/
 !/dictionary-sources/register-vocabulary.mjs
 !/dictionary-sources/test-dictionary-proposals.mjs
 !/dictionary-sources/test-line-breaks.mjs
+!/dictionary-sources/test-text-flows.mjs

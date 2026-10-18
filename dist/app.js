@@ -1,11 +1,11 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import { schoolChecks } from './school-checks.mjs?v=33';
-import { formulaChecks } from './formulas.mjs?v=33';
-import { Lexicon } from "./lexicon.mjs?v=33";
-import { checkReaction, findReactionRanges } from "./reactions.mjs?v=33";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=33';
-import { reactionRows } from './pdf-reactions.mjs?v=33';
-import { textRows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=33';
+import { schoolChecks } from './school-checks.mjs?v=34';
+import { formulaChecks } from './formulas.mjs?v=34';
+import { Lexicon } from "./lexicon.mjs?v=34";
+import { checkReaction, findReactionRanges } from "./reactions.mjs?v=34";
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=34';
+import { reactionRows } from './pdf-reactions.mjs?v=34';
+import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=34';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
@@ -744,15 +744,20 @@ function detectCandidates(items) {
 
   // Detection preserves spaces, scripts and row boundaries; search has its own compact index.
   const documentIndex = detectionIndex(virtualLines);
-  const termIndex = detectionIndex(virtualLines,true,true);
+  const proseBlocks = textFlows(virtualLines,extractedItems,state.pages);
+  // Vocabulary sees reconstructed prose, not PDF row breaks. Hard block
+  // boundaries prevent a neighbouring heading, column or table becoming a word.
   if (state.lexicon) {
-    for (const hit of state.lexicon.scan(termIndex.text)) {
+    for (const block of proseBlocks) {
+      const termIndex = detectionIndex([block],true);
+      for (const hit of state.lexicon.scan(termIndex.text)) {
       const segments = segmentsForRange(termIndex, hit.start, hit.length);
       const item = extractedItems.find(e => e.id === segments[0]?.itemId);
       if (!item) continue;
       const names = [...new Set(hit.options.map(e=>e.term))];
       candidates.push(makeCandidate({item,segments,type:'term',label:'用語候補',severity:'medium',text:hit.text,
         suggestion:names.join(' ／ '),reason:`正表記辞書の「${names.join('・')}」と1文字の挿入・脱落・置換の差があります。誤りとは断定しません。`}));
+      }
     }
   }
   addDocumentRuleCandidates(candidates, documentIndex, state.rules.term, "term", "用語", "high");

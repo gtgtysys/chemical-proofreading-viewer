@@ -1,2 +1,2 @@
-import { setupDictionaryProposals } from './dictionary-proposals.mjs?v=33';
+import { setupDictionaryProposals } from './dictionary-proposals.mjs?v=34';
 await setupDictionaryProposals();

@@ -51,6 +51,93 @@ export function detectionIndex(rows,normalize=false,respectParagraphs=false) {
   }
   return {text,positionAt};
 }
+
+// Reconstruct logical prose before vocabulary analysis. Physical PDF rows remain
+// available separately for font, script-position and reaction-layout checks.
+export function textFlows(rows, items, pages = []) {
+  const byId=new Map(items.map(item=>[item.id,item]));
+  const em=row=>row.emHeight ?? row.rect.height/1.18;
+  // Japanese and Latin fonts can expose different baselines on the same
+  // printed line. Reunite those visual rows before inferring columns.
+  const visual=[];
+  for(const row of rows) {
+    const direction=row.textDirection || {x:1,y:0};
+    const match=direction.x>.95 && visual.find(other=>other.pageNumber===row.pageNumber && (other.textDirection?.x ?? 1)>.95 && Math.abs(other.rect.top-row.rect.top)<Math.max(em(other),em(row))*.45);
+    if(!match) {visual.push({...row});continue;}
+    const members=[...new Set([...match.sourceIds,...row.sourceIds])].map(id=>byId.get(id)).filter(Boolean).sort((a,b)=>a.rect.left-b.rect.left);
+    let text='';const charMap=[];
+    for(let n=0;n<members.length;n++) {
+      const item=members[n],previous=members[n-1];
+      if(previous && item.rect.left-previous.rect.left-previous.rect.width>Math.min(em(item),em(previous))*.35) {text+=' ';charMap.push(null);}
+      text+=item.text;
+      for(let offset=0;offset<item.text.length;offset++) charMap.push({itemId:item.id,offset,total:item.text.length});
+    }
+    const left=Math.min(match.rect.left,row.rect.left),top=Math.min(match.rect.top,row.rect.top);
+    const right=Math.max(match.rect.left+match.rect.width,row.rect.left+row.rect.width),bottom=Math.max(match.rect.top+match.rect.height,row.rect.top+row.rect.height);
+    Object.assign(match,{text,charMap,sourceIds:members.map(item=>item.id),rect:{left,top,width:right-left,height:bottom-top}});
+  }
+  rows=visual;
+  const blocks=[];
+  const caption=row=>{
+    const text=row.text.trim(),prefix=text.match(/^(?:図|表|fig\.?|figure|table)\s*[0-9０-９]+(?:[–−-][0-9０-９]+)*/i);
+    return Boolean(prefix && !/^[中内にのでをはとが]/u.test(text.slice(prefix[0].length).trim()));
+  };
+  const prose=row=>row.sourceIds.map(id=>byId.get(id)).some(item=>item && item.role==='本文') && /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(row.text) && !caption(row) && !row.sourceIds.some(id=>/見出し|キャプション|ページ番号/.test(byId.get(id)?.role || ''));
+  const right=row=>row.rect.left+row.rect.width;
+  const join=(left,right)=>{
+    // Japanese wraps are orthographic continuations; Latin words need a space.
+    const separator=/[A-Za-z0-9]$/.test(left.text) && /^[A-Za-z0-9]/.test(right.text)?' ':'';
+    return {...left,text:left.text+separator+right.text,charMap:[...left.charMap,...(separator?[null]:[]),...right.charMap],
+      sourceIds:[...left.sourceIds,...right.sourceIds],sourceRows:[...left.sourceRows,...right.sourceRows],last:right.last,
+      pageNumbers:[...new Set([...left.pageNumbers,...right.pageNumbers])]};
+  };
+  const newBlock=row=>({...row,id:`flow-${row.id}`,sourceRows:[row],last:row,pageNumbers:[row.pageNumber]});
+  for(const pageNumber of [...new Set(rows.map(row=>row.pageNumber))]) {
+    let active=[];
+    const pageRows=rows.filter(row=>row.pageNumber===pageNumber);
+    for(const row of pageRows) {
+      // Split widely separated cells/columns before reconstructing reading order.
+      const members=row.sourceIds.map(id=>byId.get(id)).filter(Boolean).sort((a,b)=>a.rect.left-b.rect.left);
+      const groups=[];
+      for(const item of members) {
+        const group=groups.at(-1),previous=group?.at(-1);
+        if(!previous || item.rect.left-right(previous)>Math.max(em(item),em(previous))*4) groups.push([item]);
+        else group.push(item);
+      }
+      const fragments=groups.length>1 ? groups.flatMap(group=>textRows(group)) : [row];
+      for(const fragment of fragments) {
+        const next=newBlock(fragment);
+        if(!prose(fragment)) {blocks.push(next);continue;}
+        const possible=active.filter(block=>{
+          const previous=block.last,height=Math.max(em(previous),em(fragment));
+          const distance=fragment.rect.top-previous.rect.top;
+          const indent=fragment.rect.left-previous.rect.left;
+          const overlap=Math.max(0,Math.min(right(fragment),right(previous))-Math.max(fragment.rect.left,previous.rect.left));
+          const aligned=Math.abs(indent)<height*.7 || overlap/Math.max(1,Math.min(fragment.rect.width,previous.rect.width))>.65;
+          const paragraph=indent>height*.8 && fragment.rect.width>previous.rect.width || /[。！？!?]$/.test(previous.text.trim());
+          const direction=previous.textDirection || {x:1,y:0};
+          const interrupted=pageRows.some(other=>other.rect.top>previous.rect.top+height*.4 && other.rect.top<fragment.rect.top-height*.4 && !prose(other) && other.rect.left<right(fragment) && right(other)>fragment.rect.left && !other.sourceIds.every(id=>byId.get(id)?.role==='ページ番号'));
+          return direction.x>.95 && distance>height*.5 && distance<height*3.2 && aligned && !paragraph && !interrupted;
+        });
+        // A row spanning several columns is ambiguous, so begin a new block.
+        if(possible.length===1) {
+          const previous=possible[0],merged=join(previous,next);
+          blocks[blocks.indexOf(previous)]=merged;active[active.indexOf(previous)]=merged;
+        } else {blocks.push(next);active.push(next);}
+      }
+    }
+  }
+  // Cross-page continuation is limited to the bottom/top of adjacent pages.
+  for(let n=0;n<blocks.length;n++) {
+    const block=blocks[n];if(!prose(block.last)) continue;
+    const candidates=blocks.filter(other=>other.pageNumber===block.last.pageNumber+1 && prose(other.sourceRows[0]));
+    const first=candidates.sort((a,b)=>a.rect.top-b.rect.top)[0];if(!first) continue;
+    const page=pages.find(page=>page.pageNumber===block.last.pageNumber),nextPage=pages.find(page=>page.pageNumber===first.pageNumber);
+    if(!page || !nextPage || block.last.rect.top<page.viewport.height*.65 || first.rect.top>nextPage.viewport.height*.25 || /[。！？!?]$/.test(block.text.trim()) || Math.abs(block.last.rect.left-first.rect.left)>Math.max(em(block.last),em(first))*2) continue;
+    blocks[n]=join(block,first);blocks.splice(blocks.indexOf(first),1);
+  }
+  return blocks;
+}
 export function scriptGroup(text) {
   if(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(text)) return '日本語';
   if(/[A-Za-z]/.test(text)) return '欧文';
