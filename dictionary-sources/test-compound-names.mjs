@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';
+import {Lexicon} from '../dist/lexicon.mjs';import {compoundVocabulary,compoundOptions} from '../dist/compound-names.mjs';
+const read=name=>JSON.parse(fs.readFileSync(new URL('../dist/dictionaries/'+name,import.meta.url),'utf8'));
+const data=read('compound-components.json'),lex=new Lexicon(read('school-chemistry.json'),read('general-runtime.json'),{entries:[]},data);
+assert.equal(data.elements.length,118);assert.equal(new Set(data.elements.map(e=>e.atomicNumber)).size,118);
+for(const word of compoundVocabulary(data)) assert.equal(lex.optionsFor(word).length,0,word);
+for(const word of ['二酸化炭素','四酸化二窒素','五塩化リン','塩化鉄','水酸化カルシウム','炭酸水素ナトリウム','硫酸アンモニウム','塩化タングステン']) assert.equal(lex.scan(word).length,0,word);
+for(const [word,expected] of [['塩化ルピジウム','塩化ルビジウム'],['酸化タングステソ','酸化タングステン'],['塩花ナトリウム','塩化ナトリウム'],['硫化マグネシウ厶','硫化マグネシウム']]) assert(lex.optionsFor(word,'化学溶液').some(e=>e.term===expected),word);
+assert.equal(lex.scan('塩化タング\nステン').length,0);
+assert(lex.scan('塩化ルピ\nジウム').some(h=>h.options.some(o=>o.term==='塩化ルビジウム')));
+for(const text of ['眼鏡反応','中和適定','カルポキシ基']) assert(lex.scan(text).length,text);
+console.log(`Compound names: ${data.elements.length} elements, ${compoundVocabulary(data).length} spellings, component repairs and line breaks passed`);

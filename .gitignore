@@ -36,3 +36,5 @@ node_modules/
 !/dictionary-sources/test-text-flows.mjs
 !/dictionary-sources/test-curriculum.mjs
 !/dictionary-sources/test-math-roles.mjs
+
+!/dictionary-sources/test-compound-names.mjs

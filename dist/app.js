@@ -1,13 +1,11 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import { schoolChecks } from './school-checks.mjs?v=36';
-import { curriculumChecks } from './curriculum.mjs?v=36';
-import { mathVariables, unitSpans, scriptLabelSpans, mathText } from './math-roles.mjs?v=36';
-import { formulaChecks } from './formulas.mjs?v=36';
-import { Lexicon } from "./lexicon.mjs?v=36";
-import { checkReaction, findReactionRanges } from "./reactions.mjs?v=36";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=36';
-import { reactionRows } from './pdf-reactions.mjs?v=36';
-import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=36';
+import { schoolChecks } from './school-checks.mjs?v=37';
+import { curriculumChecks } from './curriculum.mjs?v=37';
+import { mathVariables, unitSpans, scriptLabelSpans, mathText } from './math-roles.mjs?v=37';
+import { formulaChecks } from './formulas.mjs?v=37';
+import { Lexicon } from "./lexicon.mjs?v=37";
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=37';
+import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=37';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
@@ -43,7 +41,6 @@ const elements = {
   detail: $("#detail"),
   detailType: $("#detailType"),
   detailText: $("#detailText"),
-  detailReason: $("#detailReason"),
   detailPage: $("#detailPage"),
   detailRole: $("#detailRole"),
   detailFont: $("#detailFont"),
@@ -70,12 +67,14 @@ const state = {
   searchOccurrences: [],
   searchCursor: -1,
   scale: 1.35,
+  zoom: 1,
   toastTimer: null,
   dictionary: null,
   lexicon: null,
   generalLexicon: null,
   curriculumPolicy: {schemaVersion:1,entries:[]},
   additionalVocabulary: {entries: []},
+  compoundComponents: null,
   rules: { term: [], symbol: [], formula: [] },
   units: [],
   styleSettings: { minimumFormulaSamples: 5, rareStyleRatio: 0.08, minimumRoleSamples: 3 },
@@ -112,7 +111,7 @@ function escapeRegExp(value) {
 
 function compileDictionary(dictionary) {
   if (dictionary.schemaVersion === 2 && Array.isArray(dictionary.entries)) {
-    state.lexicon = new Lexicon(dictionary, state.generalLexicon, state.additionalVocabulary);
+    state.lexicon = new Lexicon(dictionary, state.generalLexicon, state.additionalVocabulary, state.compoundComponents);
     elements.dictionaryStatus.textContent = `化学${dictionary.entries.length}語＋一般語`;
     return;
   }
@@ -156,18 +155,20 @@ async function loadDefaultDictionary() {
     if(!individualResponse.ok) throw Error('個別ルール取得失敗');
     const individual = await individualResponse.json();
     compileDictionary({...base, terms:individual.terms, patterns:individual.patterns});
-    const [chemistry, general, additions, curriculumPolicy] = await Promise.all([
+    const [chemistry, general, additions, curriculumPolicy, components] = await Promise.all([
       fetch('./dictionaries/school-chemistry.json').then(r => { if(!r.ok) throw Error('化学辞書取得失敗'); return r.json(); }),
       fetch('./dictionaries/general-runtime.json').then(r => { if(!r.ok) throw Error('一般語辞書取得失敗'); return r.json(); }),
       fetch('./dictionaries/community-vocabulary.json', {cache:'no-store'}).then(r => { if(!r.ok) throw Error('追加語彙取得失敗'); return r.json(); }),
       fetch('./dictionaries/curriculum-review.json', {cache:'no-store'}).then(r => { if(!r.ok) throw Error('教科書改訂ルール取得失敗'); return r.json(); }),
+      fetch('./dictionaries/compound-components.json', {cache:'no-store'}).then(r => { if(!r.ok) throw Error('化合物名辞書取得失敗'); return r.json(); }),
     ]);
     state.generalLexicon = general;
     state.additionalVocabulary = additions;
     state.curriculumPolicy = curriculumPolicy;
-    state.lexicon = new Lexicon(chemistry, general, additions);
+    state.compoundComponents=components;
+    state.lexicon = new Lexicon(chemistry, general, additions, components);
     elements.dictionaryStatus.textContent = `化学${chemistry.entries.length}語＋一般${general.words.length.toLocaleString()}表記`;
-    elements.dictionaryStatus.title = '正表記・追加語彙で照合。個別一致ルールは別ファイル。一般語: JMdict / EDRDG (CC BY-SA 4.0)';
+    elements.dictionaryStatus.title = '正表記・追加語彙・118元素と化合物名の構成要素で照合。一般語: JMdict / EDRDG (CC BY-SA 4.0)';
   } catch (error) {
     console.warn(error);
     compileDictionary(FALLBACK_DICTIONARY);
@@ -262,6 +263,14 @@ function hasReliableFont(font) {
   return Boolean(font) && !/^(?:serif|sans-serif|monospace|不明)(?:\s*\[.*\])?$/i.test(font);
 }
 
+function displayFont(font) {
+  return font.replace(/^[A-Z]{6}\+/, '');
+}
+
+function styleSuggestion(reference) {
+  return [displayFont(reference.font),reference.bold?'太字':null,reference.italic?'斜体':null].filter(Boolean).join('・');
+}
+
 function getStyleFlags(font) {
   const value = font.toLowerCase();
   return {
@@ -350,6 +359,7 @@ async function openPdf(file) {
       standardFontDataUrl: new URL('./vendor/standard_fonts/',import.meta.url).href,
       wasmUrl: new URL('./vendor/wasm/',import.meta.url).href,
     }).promise;
+    $('#zoomToolbar').hidden=false;
     elements.pageCount.textContent = state.pdf.numPages;
     for (let pageNumber = 1; pageNumber <= state.pdf.numPages; pageNumber += 1) {
       elements.loadingText.textContent = `${pageNumber} / ${state.pdf.numPages} ページを解析しています`;
@@ -375,6 +385,24 @@ async function openPdf(file) {
   }
 }
 
+function pageScrollTop(shell) {
+  return elements.documentArea.scrollTop+shell.getBoundingClientRect().top-elements.documentArea.getBoundingClientRect().top-65;
+}
+function setZoom(value) {
+  if(state.documentType!=='pdf' || !state.pdf) return;
+  const prior=state.zoom;
+  state.zoom=Math.max(.5,Math.min(3,Math.round(value*100)/100));
+  const area=elements.documentArea;
+  const center=(area.scrollTop+area.clientHeight/2)/prior;
+  for(const page of state.pages) page.shell.style.zoom=state.zoom;
+  area.scrollTop=center*state.zoom-area.clientHeight/2;
+  $('#zoomValue').textContent=Math.round(state.zoom*100)+'%';
+  $('#zoomOut').disabled=state.zoom<=.5;
+  $('#zoomIn').disabled=state.zoom>=3;
+}
+$('#zoomOut').addEventListener('click',()=>setZoom(state.zoom-.25));
+$('#zoomIn').addEventListener('click',()=>setZoom(state.zoom+.25));
+$('#zoomFit').addEventListener('click',()=>setZoom(availableDocumentWidth()/Math.max(...state.pages.map(page=>page.viewport.width))));
 function availableDocumentWidth() {
   const style = getComputedStyle(elements.documentArea);
   const horizontalPadding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
@@ -533,6 +561,7 @@ async function renderAndExtractPage(pageNumber) {
   const shell = document.createElement("article");
   shell.className = "page-shell";
   shell.dataset.page = String(pageNumber);
+  shell.style.zoom=state.zoom;
   shell.style.width = `${viewport.width}px`;
   shell.style.height = `${viewport.height}px`;
 
@@ -739,24 +768,6 @@ function detectCandidates(items) {
     const anchor=extractedItems.find(item=>item.id===segments[0]?.itemId);
     if(anchor) candidates.push(makeCandidate({item:anchor,segments,type:hit.type || 'formula',label:hit.type==='symbol'?'元素記号':'添字',severity:'medium',text:hit.text,suggestion:hit.suggestion,reason:hit.reason}));
   }
-  // Prefer assembled rows over individual fragments to avoid checking an incomplete equation twice.
-  const assembledReactionRows = reactionRows(extractedItems);
-  const assembledIds = new Set(assembledReactionRows.flatMap(line => line.sourceIds));
-  for (const line of [...assembledReactionRows, ...virtualLines.filter(line => !line.charMap.some(p => assembledIds.has(p?.itemId)))]) {
-    for (const hit of findReactionRanges(line.text)) {
-      if(line.incompleteReason) hit.result={status:'unknown',reason:line.incompleteReason,rows:[]};
-      if(hit.result.status==='balanced') continue;
-      const segments = line.charMap
-        ? segmentsFromCharacterMap(line.charMap, hit.start, hit.length)
-        : [{itemId: line.id, start: hit.start, end: hit.start + hit.length, total: line.text.length}];
-      const anchor = extractedItems.find(item => item.id === segments[0]?.itemId);
-      if (!anchor) continue;
-      const label = hit.result.status === 'balanced' ? '反応式：一致' : hit.result.status === 'unbalanced' ? '反応式：不一致' : '反応式：判定保留';
-      candidates.push(makeCandidate({item: anchor, segments, type: 'reaction', label,
-        severity: hit.result.status === 'unbalanced' ? 'high' : 'medium', text: hit.text,
-        reason: `${hit.result.reason} 抽出した式を確認してください。`}));
-    }
-  }
   for (const line of virtualLines) {
     addRuleCandidates(candidates, line, state.rules.term, "term", "用語", "high");
     addRuleCandidates(candidates, line, state.rules.symbol, "symbol", "類似文字", "high");
@@ -827,7 +838,7 @@ function detectCandidates(items) {
             label: "書式",
             severity: "format",
             text: entry.token,
-            suggestion: null,
+            suggestion: styleSuggestion(entries.find(e=>e.signature===dominant[0]).item),
             reason: styleDifference(entry.item,entries.find(e=>e.signature===dominant[0]).item,"化学式"),
             segments: tokenSegments(entry.item,entry.token),
           }));
@@ -856,7 +867,7 @@ function detectCandidates(items) {
           label: "書式",
           severity: "format",
           text: token,
-          suggestion: null,
+          suggestion: styleSuggestion(entries.find(e=>e.signature===tokenDominant[0]).item),
           reason: styleDifference(entry.item,entries.find(e=>e.signature===tokenDominant[0]).item,`化学式「${token}」`),
           segments: tokenSegments(entry.item,token),
         }));
@@ -901,7 +912,7 @@ function addRoleStyleOutliers(candidates, items, role) {
         label: "書式",
         severity: "format",
         text: item.text.trim(),
-        suggestion: null,
+        suggestion: styleSuggestion(entries.find(e=>styleSignature(e)===dominant[0])),
         reason: styleDifference(item,entries.find(e=>styleSignature(e)===dominant[0]),role),
       }));
     }
@@ -914,7 +925,7 @@ function tokenSegments(item, token) {
 }
 function styleDifference(item,reference,role) {
   const differences=[];
-  if(hasReliableFont(item.font) && hasReliableFont(reference.font) && item.font.replace(/^.*\+/, '')!==reference.font.replace(/^.*\+/, '')) differences.push('フォント：'+item.font.replace(/^.*\+/, '')+'（基準：'+reference.font.replace(/^.*\+/, '')+'）');
+  if(hasReliableFont(item.font) && hasReliableFont(reference.font) && item.font.replace(/^[A-Z]{6}\+/, '')!==reference.font.replace(/^[A-Z]{6}\+/, '')) differences.push('フォント：'+item.font.replace(/^[A-Z]{6}\+/, '')+'（基準：'+reference.font.replace(/^[A-Z]{6}\+/, '')+'）');
   if(item.bold!==reference.bold) differences.push('太字：'+(item.bold?'あり':'なし')+'（基準：'+(reference.bold?'あり':'なし')+'）');
   if(item.italic!==reference.italic) differences.push('斜体：'+(item.italic?'あり':'なし')+'（基準：'+(reference.italic?'あり':'なし')+'）');
   return role+'の同じ用途の多数派と異なります。'+differences.join('。')+'。基準例：'+reference.pageNumber+'ページ「'+reference.text.slice(0,35)+'」。';
@@ -922,7 +933,7 @@ function styleDifference(item,reference,role) {
 
 function styleSignature(item) {
   const fontPart = hasReliableFont(item.font)
-    ? item.font.replace(/^.*\+/, "").replace(/((?:LMRoman|LMSans|LMMono|cmr|cmmi|cmsy|cmbx|cmss|cmtt))\d+/gi,"$1").replace(/PSMT|MT$/g, "")
+    ? item.font.replace(/^[A-Z]{6}\+/, "").replace(/((?:LMRoman|LMSans|LMMono|cmr|cmmi|cmsy|cmbx|cmss|cmtt))\d+/gi,"$1").replace(/PSMT|MT$/g, "")
     : "フォント情報なし";
   return `${fontPart}${item.bold ? " / 太字" : ""}${item.italic ? " / 斜体" : ""}`;
 }
@@ -984,6 +995,11 @@ function deduplicateCandidates(candidates) {
 }
 
 function resetPanels() {
+  state.zoom=1;
+  $('#zoomToolbar').hidden=true;
+  $('#zoomValue').textContent='100%';
+  $('#zoomOut').disabled=false;
+  $('#zoomIn').disabled=false;
   elements.pages.replaceChildren();
   elements.candidateList.replaceChildren();
   elements.candidateCount.textContent = "0";
@@ -1026,7 +1042,7 @@ function renderCandidates() {
         <span class="candidate-meta"><span class="candidate-label">${escapeHtml(candidate.label)}</span><span>${candidate.pageNumber}ページ</span></span>
         <span class="review-badge">${reviewLabels[review.status]}${candidate.updated ? '・更新後の確認' : ''}</span>
         <strong>${escapeHtml(candidate.text)}</strong>
-        <p>${escapeHtml(candidate.reason)}</p>
+        ${candidate.suggestion ? '<p>→ '+escapeHtml(candidate.suggestion)+'</p>' : ''}
       </span>`;
     button.addEventListener("click", () => selectCandidate(candidate.id));
     li.append(button);
@@ -1058,11 +1074,7 @@ function selectCandidate(candidateId) {
   elements.detailType.textContent = candidate.label;
   elements.detailText.textContent = candidate.text;
   state.selectedText = candidate.text;
-  elements.detailReason.textContent = candidate.reason;
-  if (candidate.type === 'reaction') {
-    $('#reactionInput').value = candidate.text;
-    showReactionResult(candidate.text);
-  }
+
   const candidateItems = (candidate.itemIds || [candidate.itemId])
     .map((id) => state.items.find((entry) => entry.id === id))
     .filter(Boolean);
@@ -1070,41 +1082,17 @@ function selectCandidate(candidateId) {
   const roles = [...new Set(candidateItems.map((entry) => entry.role).filter((role) => role !== "test-id"))];
   elements.detailPage.textContent = `${pages.length > 1 ? `${pages[0]}–${pages.at(-1)}` : candidate.pageNumber} / ${state.pdf.numPages}`;
   elements.detailRole.textContent = roles.join("・") || candidate.role || item.role;
-  elements.detailFont.textContent = hasReliableFont(item.font) ? item.font : "取得できず（取得できた書式で比較）";
+  elements.detailFont.textContent = hasReliableFont(item.font) ? displayFont(item.font) : "取得できず";
   elements.detailSize.textContent = `${item.size.toFixed(1)} pt`;
   elements.detailStyle.textContent = [item.bold ? "太字" : "標準", item.italic ? "斜体" : null].filter(Boolean).join("・");
   elements.suggestionBox.hidden = !candidate.suggestion;
   elements.detailSuggestion.textContent = candidate.suggestion || "";
   renderCandidates();
   requestAnimationFrame(() => {
-    const targetTop = item.shell.offsetTop - Math.max(18, (elements.documentArea.clientHeight - item.shell.offsetHeight) / 2);
+    const targetTop = pageScrollTop(item.shell);
     elements.documentArea.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
   });
 }
-
-function showReactionResult(text) {
-  const result = checkReaction(text);
-  const output = $('#reactionResult');
-  output.replaceChildren();
-  const message = document.createElement('p');
-  message.textContent = (result.status === 'unknown' ? '判定保留：' : result.status === 'unbalanced' ? '不一致：' : '') + result.reason;
-  output.append(message);
-  if (result.rows.length) {
-    const table = document.createElement('table');
-    const header = document.createElement('tr');
-    for (const label of ['元素／電荷', '左辺', '右辺']) { const th = document.createElement('th'); th.textContent = label; header.append(th); }
-    table.append(header);
-    for (const row of result.rows) {
-      const tr = document.createElement('tr');
-      if (row.left !== row.right) tr.className = 'reaction-difference';
-      for (const value of [row.element, row.left, row.right]) { const td = document.createElement('td'); td.textContent = value; tr.append(td); }
-      table.append(tr);
-    }
-    output.append(table);
-  }
-}
-$('#reactionForm').addEventListener('submit', event => { event.preventDefault(); showReactionResult($('#reactionInput').value); });
-$('#openReactionButton').addEventListener('click', () => { elements.detailPanel.classList.add('open'); $('#reactionInput').focus(); });
 
 function candidateItems(candidate) {
   return (candidate.itemIds || [candidate.itemId])
@@ -1180,7 +1168,7 @@ function goToSearchResult(nextIndex) {
   const firstSegment = state.searchOccurrences[state.searchCursor].segments[0];
   const item = state.items.find((entry) => entry.id === firstSegment?.itemId);
   if (item) {
-    const targetTop = item.shell.offsetTop - 70;
+    const targetTop = pageScrollTop(item.shell);
     elements.documentArea.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
   }
 }
@@ -1247,10 +1235,9 @@ function showTextSelectionDetails() {
   elements.detailPanel.classList.add("open");
   elements.detailType.textContent = "選択範囲";
   elements.detailText.textContent = selectedText || "選択した文字列";
-  elements.detailReason.textContent = "選択範囲に含まれる文字要素から役割を表示しています。";
   elements.detailPage.textContent = `${pages.length > 1 ? `${pages[0]}–${pages.at(-1)}` : pages[0]} / ${state.pdf.numPages}`;
   elements.detailRole.textContent = roles.join("・") || "判定不能";
-  elements.detailFont.textContent = fonts.length ? fonts.join("・") : "取得できず";
+  elements.detailFont.textContent = fonts.length ? [...new Set(fonts.map(displayFont))].join("・") : "取得できず";
   elements.detailSize.textContent = sizes.length === 1 ? `${sizes[0]} pt` : `${Math.min(...sizes.map(Number)).toFixed(1)}–${Math.max(...sizes.map(Number)).toFixed(1)} pt`;
   elements.detailStyle.textContent = styles.join("・");
   elements.suggestionBox.hidden = true;
@@ -1311,7 +1298,7 @@ function renderCoverage() {
   if(missing.length) notes.push(`文字を抽出できないページ：${missing.join('、')}。画像内の文字は検査できません。`);
   if(corrupted.length) notes.push(`文字化けの疑いがあるページ：${corrupted.join('、')}。`);
   if(uncertain) notes.push(`フォント名を特定できない文字要素が${uncertain}件あります。元のフォント名に基づく比較はできません。`);
-  notes.push('候補をクリックすると、該当箇所と判定理由を確認できます。');
+  notes.push('候補をクリックすると、該当箇所と推奨候補を確認できます。');
   $('#coverageReport').textContent=notes.join(' ');
 }
 function renderRevision(carriedCount) {
@@ -1373,9 +1360,9 @@ $('#findSelectedText').addEventListener('click',()=>{
 });
 $('#findSelectedFont').addEventListener('click',()=>{
  const selected=state.selectedItemIds.map(id=>state.items.find(item=>item.id===id)).filter(Boolean);
- const fonts=new Set(selected.filter(item=>hasReliableFont(item.font)).map(item=>item.font.replace(/^.*\+/,'')));
+ const fonts=new Set(selected.filter(item=>hasReliableFont(item.font)).map(item=>item.font.replace(/^[A-Z]{6}\+/,'')));
  if(!fonts.size){showToast('フォント名を特定できないため検索できません。');return;}
- state.searchOccurrences=state.items.filter(item=>!item.virtual && fonts.has(item.font.replace(/^.*\+/,''))).map(item=>({itemIds:[item.id],segments:tokenSegments(item,item.text)}));
+ state.searchOccurrences=state.items.filter(item=>!item.virtual && fonts.has(item.font.replace(/^[A-Z]{6}\+/,''))).map(item=>({itemIds:[item.id],segments:tokenSegments(item,item.text)}));
  state.searchCursor=-1;elements.searchForm.hidden=false;elements.searchToggleButton.setAttribute('aria-expanded','true');
  elements.searchInput.value='';elements.searchInput.placeholder='フォント検索：'+[...fonts].join('・');
  elements.clearTextSearchButton.hidden=false;updateSearchNavigation();if(state.searchOccurrences.length)goToSearchResult(0);
@@ -1465,7 +1452,7 @@ function registerWebMcpTools() {
     {
       name: "select_proofreading_candidate",
       title: "校正候補を選択",
-      description: "候補IDを選び、画面上で該当ページと判定根拠を表示します。",
+      description: "候補IDを選び、画面上で該当ページと推奨候補を表示します。",
       inputSchema: {
         type: "object",
         properties: { candidateId: { type: "string" } },

@@ -1,3 +1,4 @@
+import {compoundVocabulary,compoundOptions} from './compound-names.mjs?v=37';
 export const normalize = text => text.normalize('NFKC');
 export function oneEdit(a,b) {
   if(a===b || Math.abs(a.length-b.length)>1) return false;
@@ -11,13 +12,14 @@ export function oneEdit(a,b) {
   return edits+(i<a.length || j<b.length ? 1:0)===1;
 }
 export class Lexicon {
-  constructor(chemistry, general, additions = {entries: []}) {
+  constructor(chemistry, general, additions = {entries: []}, components=null) {
     if(!Array.isArray(chemistry.entries) || !Array.isArray(general.words)) throw Error('語彙辞書の形式が不正です');
     this.terms=chemistry.entries.map(e=>({...e,key:normalize(e.term)}));
     if(!Array.isArray(additions.entries) || additions.entries.some(e=>typeof e.term!=='string' || !e.term.trim())) throw Error('追加語彙辞書の形式が不正です');
     // Additional correct spellings are vocabulary, never whole-document exclusions.
     const supplementary=additions.entries.map(e=>normalize(e.term));
-    this.known=new Set([...general.words.map(normalize),...this.terms.map(e=>e.key),...supplementary]);
+    this.components=components;
+    this.known=new Set([...general.words.map(normalize),...this.terms.map(e=>e.key),...supplementary,...compoundVocabulary(components)]);
     this.mixedStems=new Set([...this.known].map(word=>word.match(/^[\p{Script=Han}]+[\p{Script=Hiragana}]/u)?.[0]).filter(Boolean));
     this.chemicalWords=new Set(this.terms.map(e=>e.key));
     this.byLength=new Map();
@@ -47,6 +49,8 @@ export class Lexicon {
   }
   optionsFor(word,context='') {
     if(this.known.has(word) || this.knownCompound(word)) return [];
+    const compound=compoundOptions(word,this.components,oneEdit);
+    if(compound!==null) return compound;
     // Multiplicative substituent prefixes are productive chemical nomenclature.
     // Require an attested remainder and a recognized substituent, not arbitrary ジ+words.
     const substituted=word.match(/^(モノ|ジ|トリ|テトラ|ペンタ|ヘキサ)((?:ニトロ|クロロ|ブロモ|ヨード|フルオロ|メチル|エチル|ヒドロキシ).+)$/u);

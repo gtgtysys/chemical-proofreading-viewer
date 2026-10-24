@@ -181,7 +181,10 @@ button, label { -webkit-tap-highlight-color: transparent; }
 .spinner { width: 34px; height: 34px; border: 3px solid #bac8cd; border-top-color: var(--teal); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.pages { display: grid; justify-items: center; gap: 28px; }
+.pages { display: grid; justify-items: center; gap: 28px; width: max-content; min-width: 100%; }
+.document-toolbar { position: sticky; top: -20px; left: 0; z-index: 15; display: flex; align-items: center; gap: 8px; width: max-content; padding: 8px; margin: -18px 0 24px; border: 1px solid var(--line); border-radius: 8px; background: white; box-shadow: var(--shadow); }
+.document-toolbar button { cursor: pointer; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); padding: 5px 10px; color: var(--ink); }
+.document-toolbar output { min-width: 48px; text-align: center; font-size: 13px; }
 .page-shell { position: relative; background: white; box-shadow: var(--shadow); line-height: 0; }
 .page-shell canvas { display: block; max-width: none; }
 .pptx-preview-wrapper { max-width: 100%; background: transparent !important; }
@@ -238,13 +241,6 @@ button, label { -webkit-tap-highlight-color: transparent; }
   .page-shell { transform-origin: top center; }
   .detail-panel { top: 0; width: min(88vw, 340px); }
 }
-.reaction-check { padding: 18px; border-bottom: 1px solid var(--line); }
-.reaction-check label { display: block; font-weight: 700; margin-bottom: 8px; }
-.reaction-check textarea { width: 100%; box-sizing: border-box; font: inherit; padding: 8px; }
-.reaction-check p { font-size: 12px; line-height: 1.7; }
-.reaction-check table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 8px; }
-.reaction-check td, .reaction-check th { padding: 4px; border-bottom: 1px solid var(--line); text-align: left; }
-.reaction-difference { background: #fff0da; color: #8c3500; }
 .workflow-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0; }
 .workflow-settings { margin: 12px 0; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: white; font-size: 12px; }
 .workflow-settings label { display: block; margin: 8px 0 4px; }
@@ -255,7 +251,6 @@ button, label { -webkit-tap-highlight-color: transparent; }
 .coverage-report { padding: 8px 0; font-size: 12px; color: var(--amber); line-height: 1.6; }
 .review-badge { color: var(--teal); font-weight: 700; }
 .revision-entry { padding: 8px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
-.reaction-check .secondary-button { color: var(--ink); border-color: var(--line); background: #edf3f3; }
 .top-actions { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .topbar { height: auto; min-height: 72px; padding: 10px 16px; gap: 12px; }
 @media (min-width: 761px) {
@@ -265,3 +260,6 @@ button, label { -webkit-tap-highlight-color: transparent; }
 
 #dictionaryProposalForm input { width:100%; box-sizing:border-box; padding:8px; font:inherit; }
 #dictionaryProposalLink[aria-disabled='true'] { opacity:.5; pointer-events:none; }
+
+.detail-panel .secondary-button { color: var(--ink); border-color: var(--line); background: white; }
+.metadata dd { overflow-wrap: anywhere; }

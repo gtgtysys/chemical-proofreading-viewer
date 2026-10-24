@@ -1,0 +1,545 @@
+{
+  "schemaVersion": 1,
+  "license": "CC0-1.0",
+  "scope": "元素名と無機化合物名の表記を構成要素として照合するための独自データ。",
+  "sources": [
+    {
+      "title": "東北大学金属材料研究所 元素周期表",
+      "url": "https://www.imr.tohoku.ac.jp/kids/openhouse/2023/genso/",
+      "use": "元素名の照合。解説文・図は収録しない。"
+    },
+    {
+      "title": "理化学研究所 元素周期表",
+      "url": "https://www.rarf.riken.go.jp/enjoy/syuki.html",
+      "use": "元素名の照合先。"
+    }
+  ],
+  "elements": [
+    {
+      "atomicNumber": 1,
+      "name": "水素"
+    },
+    {
+      "atomicNumber": 2,
+      "name": "ヘリウム"
+    },
+    {
+      "atomicNumber": 3,
+      "name": "リチウム"
+    },
+    {
+      "atomicNumber": 4,
+      "name": "ベリリウム"
+    },
+    {
+      "atomicNumber": 5,
+      "name": "ホウ素"
+    },
+    {
+      "atomicNumber": 6,
+      "name": "炭素"
+    },
+    {
+      "atomicNumber": 7,
+      "name": "窒素"
+    },
+    {
+      "atomicNumber": 8,
+      "name": "酸素"
+    },
+    {
+      "atomicNumber": 9,
+      "name": "フッ素"
+    },
+    {
+      "atomicNumber": 10,
+      "name": "ネオン"
+    },
+    {
+      "atomicNumber": 11,
+      "name": "ナトリウム"
+    },
+    {
+      "atomicNumber": 12,
+      "name": "マグネシウム"
+    },
+    {
+      "atomicNumber": 13,
+      "name": "アルミニウム"
+    },
+    {
+      "atomicNumber": 14,
+      "name": "ケイ素"
+    },
+    {
+      "atomicNumber": 15,
+      "name": "リン"
+    },
+    {
+      "atomicNumber": 16,
+      "name": "硫黄"
+    },
+    {
+      "atomicNumber": 17,
+      "name": "塩素"
+    },
+    {
+      "atomicNumber": 18,
+      "name": "アルゴン"
+    },
+    {
+      "atomicNumber": 19,
+      "name": "カリウム"
+    },
+    {
+      "atomicNumber": 20,
+      "name": "カルシウム"
+    },
+    {
+      "atomicNumber": 21,
+      "name": "スカンジウム"
+    },
+    {
+      "atomicNumber": 22,
+      "name": "チタン"
+    },
+    {
+      "atomicNumber": 23,
+      "name": "バナジウム"
+    },
+    {
+      "atomicNumber": 24,
+      "name": "クロム"
+    },
+    {
+      "atomicNumber": 25,
+      "name": "マンガン"
+    },
+    {
+      "atomicNumber": 26,
+      "name": "鉄"
+    },
+    {
+      "atomicNumber": 27,
+      "name": "コバルト"
+    },
+    {
+      "atomicNumber": 28,
+      "name": "ニッケル"
+    },
+    {
+      "atomicNumber": 29,
+      "name": "銅"
+    },
+    {
+      "atomicNumber": 30,
+      "name": "亜鉛"
+    },
+    {
+      "atomicNumber": 31,
+      "name": "ガリウム"
+    },
+    {
+      "atomicNumber": 32,
+      "name": "ゲルマニウム"
+    },
+    {
+      "atomicNumber": 33,
+      "name": "ヒ素"
+    },
+    {
+      "atomicNumber": 34,
+      "name": "セレン"
+    },
+    {
+      "atomicNumber": 35,
+      "name": "臭素"
+    },
+    {
+      "atomicNumber": 36,
+      "name": "クリプトン"
+    },
+    {
+      "atomicNumber": 37,
+      "name": "ルビジウム"
+    },
+    {
+      "atomicNumber": 38,
+      "name": "ストロンチウム"
+    },
+    {
+      "atomicNumber": 39,
+      "name": "イットリウム"
+    },
+    {
+      "atomicNumber": 40,
+      "name": "ジルコニウム"
+    },
+    {
+      "atomicNumber": 41,
+      "name": "ニオブ"
+    },
+    {
+      "atomicNumber": 42,
+      "name": "モリブデン"
+    },
+    {
+      "atomicNumber": 43,
+      "name": "テクネチウム"
+    },
+    {
+      "atomicNumber": 44,
+      "name": "ルテニウム"
+    },
+    {
+      "atomicNumber": 45,
+      "name": "ロジウム"
+    },
+    {
+      "atomicNumber": 46,
+      "name": "パラジウム"
+    },
+    {
+      "atomicNumber": 47,
+      "name": "銀"
+    },
+    {
+      "atomicNumber": 48,
+      "name": "カドミウム"
+    },
+    {
+      "atomicNumber": 49,
+      "name": "インジウム"
+    },
+    {
+      "atomicNumber": 50,
+      "name": "スズ"
+    },
+    {
+      "atomicNumber": 51,
+      "name": "アンチモン"
+    },
+    {
+      "atomicNumber": 52,
+      "name": "テルル"
+    },
+    {
+      "atomicNumber": 53,
+      "name": "ヨウ素"
+    },
+    {
+      "atomicNumber": 54,
+      "name": "キセノン"
+    },
+    {
+      "atomicNumber": 55,
+      "name": "セシウム"
+    },
+    {
+      "atomicNumber": 56,
+      "name": "バリウム"
+    },
+    {
+      "atomicNumber": 57,
+      "name": "ランタン"
+    },
+    {
+      "atomicNumber": 58,
+      "name": "セリウム"
+    },
+    {
+      "atomicNumber": 59,
+      "name": "プラセオジム"
+    },
+    {
+      "atomicNumber": 60,
+      "name": "ネオジム"
+    },
+    {
+      "atomicNumber": 61,
+      "name": "プロメチウム"
+    },
+    {
+      "atomicNumber": 62,
+      "name": "サマリウム"
+    },
+    {
+      "atomicNumber": 63,
+      "name": "ユウロピウム"
+    },
+    {
+      "atomicNumber": 64,
+      "name": "ガドリニウム"
+    },
+    {
+      "atomicNumber": 65,
+      "name": "テルビウム"
+    },
+    {
+      "atomicNumber": 66,
+      "name": "ジスプロシウム"
+    },
+    {
+      "atomicNumber": 67,
+      "name": "ホルミウム"
+    },
+    {
+      "atomicNumber": 68,
+      "name": "エルビウム"
+    },
+    {
+      "atomicNumber": 69,
+      "name": "ツリウム"
+    },
+    {
+      "atomicNumber": 70,
+      "name": "イッテルビウム"
+    },
+    {
+      "atomicNumber": 71,
+      "name": "ルテチウム"
+    },
+    {
+      "atomicNumber": 72,
+      "name": "ハフニウム"
+    },
+    {
+      "atomicNumber": 73,
+      "name": "タンタル"
+    },
+    {
+      "atomicNumber": 74,
+      "name": "タングステン"
+    },
+    {
+      "atomicNumber": 75,
+      "name": "レニウム"
+    },
+    {
+      "atomicNumber": 76,
+      "name": "オスミウム"
+    },
+    {
+      "atomicNumber": 77,
+      "name": "イリジウム"
+    },
+    {
+      "atomicNumber": 78,
+      "name": "白金"
+    },
+    {
+      "atomicNumber": 79,
+      "name": "金"
+    },
+    {
+      "atomicNumber": 80,
+      "name": "水銀"
+    },
+    {
+      "atomicNumber": 81,
+      "name": "タリウム"
+    },
+    {
+      "atomicNumber": 82,
+      "name": "鉛"
+    },
+    {
+      "atomicNumber": 83,
+      "name": "ビスマス"
+    },
+    {
+      "atomicNumber": 84,
+      "name": "ポロニウム"
+    },
+    {
+      "atomicNumber": 85,
+      "name": "アスタチン"
+    },
+    {
+      "atomicNumber": 86,
+      "name": "ラドン"
+    },
+    {
+      "atomicNumber": 87,
+      "name": "フランシウム"
+    },
+    {
+      "atomicNumber": 88,
+      "name": "ラジウム"
+    },
+    {
+      "atomicNumber": 89,
+      "name": "アクチニウム"
+    },
+    {
+      "atomicNumber": 90,
+      "name": "トリウム"
+    },
+    {
+      "atomicNumber": 91,
+      "name": "プロトアクチニウム"
+    },
+    {
+      "atomicNumber": 92,
+      "name": "ウラン"
+    },
+    {
+      "atomicNumber": 93,
+      "name": "ネプツニウム"
+    },
+    {
+      "atomicNumber": 94,
+      "name": "プルトニウム"
+    },
+    {
+      "atomicNumber": 95,
+      "name": "アメリシウム"
+    },
+    {
+      "atomicNumber": 96,
+      "name": "キュリウム"
+    },
+    {
+      "atomicNumber": 97,
+      "name": "バークリウム"
+    },
+    {
+      "atomicNumber": 98,
+      "name": "カリホルニウム"
+    },
+    {
+      "atomicNumber": 99,
+      "name": "アインスタイニウム"
+    },
+    {
+      "atomicNumber": 100,
+      "name": "フェルミウム"
+    },
+    {
+      "atomicNumber": 101,
+      "name": "メンデレビウム"
+    },
+    {
+      "atomicNumber": 102,
+      "name": "ノーベリウム"
+    },
+    {
+      "atomicNumber": 103,
+      "name": "ローレンシウム"
+    },
+    {
+      "atomicNumber": 104,
+      "name": "ラザホージウム"
+    },
+    {
+      "atomicNumber": 105,
+      "name": "ドブニウム"
+    },
+    {
+      "atomicNumber": 106,
+      "name": "シーボーギウム"
+    },
+    {
+      "atomicNumber": 107,
+      "name": "ボーリウム"
+    },
+    {
+      "atomicNumber": 108,
+      "name": "ハッシウム"
+    },
+    {
+      "atomicNumber": 109,
+      "name": "マイトネリウム"
+    },
+    {
+      "atomicNumber": 110,
+      "name": "ダームスタチウム"
+    },
+    {
+      "atomicNumber": 111,
+      "name": "レントゲニウム"
+    },
+    {
+      "atomicNumber": 112,
+      "name": "コペルニシウム"
+    },
+    {
+      "atomicNumber": 113,
+      "name": "ニホニウム"
+    },
+    {
+      "atomicNumber": 114,
+      "name": "フレロビウム"
+    },
+    {
+      "atomicNumber": 115,
+      "name": "モスコビウム"
+    },
+    {
+      "atomicNumber": 116,
+      "name": "リバモリウム"
+    },
+    {
+      "atomicNumber": 117,
+      "name": "テネシン"
+    },
+    {
+      "atomicNumber": 118,
+      "name": "オガネソン"
+    }
+  ],
+  "aliases": {
+    "硼素": "ホウ素",
+    "珪素": "ケイ素",
+    "燐": "リン",
+    "砒素": "ヒ素",
+    "沃素": "ヨウ素",
+    "弗素": "フッ素",
+    "錫": "スズ",
+    "ネオジウム": "ネオジム"
+  },
+  "prefixes": [
+    "酸化",
+    "硫化",
+    "塩化",
+    "臭化",
+    "ヨウ化",
+    "フッ化",
+    "水素化",
+    "窒化",
+    "炭化",
+    "リン化",
+    "ホウ化",
+    "ケイ化",
+    "セレン化",
+    "テルル化",
+    "水酸化",
+    "硫酸",
+    "硝酸",
+    "炭酸",
+    "リン酸",
+    "酢酸",
+    "炭酸水素",
+    "硫酸水素",
+    "亜硫酸",
+    "亜硝酸",
+    "次亜塩素酸",
+    "塩素酸",
+    "過塩素酸",
+    "クロム酸",
+    "二クロム酸",
+    "過マンガン酸",
+    "シアン化"
+  ],
+  "prefixAliases": {
+    "沃化": "ヨウ化",
+    "弗化": "フッ化",
+    "燐化": "リン化",
+    "硼化": "ホウ化",
+    "珪化": "ケイ化",
+    "燐酸": "リン酸"
+  },
+  "otherCations": [
+    "アンモニウム"
+  ]
+}

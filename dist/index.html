@@ -6,7 +6,7 @@
     <meta name="description" content="PDF・PPTXを端末内で解析し、化学用語・化学式・書式の候補を確認するビューア" />
     <title>化学PDF校正ビューア</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23102736'/%3E%3Cpath d='M22 12h20v5l-4 7v7l10 16a5 5 0 0 1-4 8H20a5 5 0 0 1-4-8l10-16v-7l-4-7z' fill='none' stroke='%236fd5c2' stroke-width='4'/%3E%3Cpath d='M21 44h22' stroke='%23f0b85a' stroke-width='4'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=36" />
+    <link rel="stylesheet" href="./styles.css?v=37" />
   </head>
   <body>
     <header class="topbar">
@@ -22,7 +22,6 @@
         <span id="dictionaryStatus" class="dictionary-status" title="現在使用中の辞書">辞書を読込中</span>
         <button id="searchToggleButton" class="secondary-button" type="button" disabled aria-expanded="false">検索</button>
         <button id="reloadButton" class="secondary-button" type="button" disabled>再解析</button>
-        <button id="openReactionButton" class="secondary-button" type="button">反応式を検査</button>
         <label class="file-button" for="fileInput">PDF・PPTXを開く</label>
         <input id="fileInput" type="file" accept="application/pdf,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx" hidden />
         <label class="dictionary-button" for="updatedPdfInput">更新PDFを開く</label>
@@ -70,7 +69,6 @@
           <button type="button" class="filter" data-filter="term">用語</button>
           <button type="button" class="filter" data-filter="symbol">記号</button>
           <button type="button" class="filter" data-filter="formula">化学式</button>
-          <button type="button" class="filter" data-filter="reaction">反応式</button>
           <button type="button" class="filter" data-filter="format">書式</button>
           <button type="button" class="filter" data-filter="structure">番号・括弧</button>
           <button type="button" class="filter" data-filter="preference">表記統一</button>
@@ -84,6 +82,12 @@
       </aside>
 
       <section id="documentArea" class="document-area" aria-label="資料表示領域">
+        <div id="zoomToolbar" class="document-toolbar" hidden aria-label="PDFの表示倍率">
+          <button id="zoomOut" type="button" aria-label="PDFを縮小">−</button>
+          <output id="zoomValue" aria-live="polite">100%</output>
+          <button id="zoomIn" type="button" aria-label="PDFを拡大">＋</button>
+          <button id="zoomFit" type="button">幅に合わせる</button>
+        </div>
         <form id="searchForm" class="search-bar" role="search" hidden>
           <label class="sr-only" for="searchInput">資料内の文字列を検索</label>
           <input id="searchInput" type="search" placeholder="文字列を検索（空白を無視）" autocomplete="off" />
@@ -108,17 +112,10 @@
       </section>
 
       <aside class="panel detail-panel" aria-label="候補の詳細">
-        <form id="reactionForm" class="reaction-check">
-          <label for="reactionInput">反応式の原子数・電荷を確認</label>
-          <textarea id="reactionInput" rows="3" placeholder="2H₂ + O₂ → 2H₂O"></textarea>
-          <p>抽出した式を確認・修正できます。電荷は Fe³⁺ または Fe^3+ と入力。反応条件は除いてください。</p>
-          <button type="submit" class="secondary-button">式を検査</button>
-          <div id="reactionResult" aria-live="polite"></div>
-        </form>
         <div class="panel-heading">
           <div>
             <p class="eyebrow">選択内容</p>
-            <h2>判定の根拠</h2>
+            <h2>推奨候補</h2>
           </div>
         </div>
         <div id="emptyDetail" class="panel-empty detail-empty">
@@ -128,7 +125,6 @@
         <div id="detail" class="detail" hidden>
           <span id="detailType" class="detail-type"></span>
           <h3 id="detailText"></h3>
-          <p id="detailReason" class="detail-reason"></p>
           <dl class="metadata">
             <div><dt>ページ</dt><dd id="detailPage"></dd></div>
             <div><dt>役割</dt><dd id="detailRole"></dd></div>
@@ -163,7 +159,7 @@
             <select id="roleSelect"><option>本文</option><option>見出し</option><option>化学式</option><option>単位</option><option>変数</option><option>番号</option><option>係数</option><option>ページ番号</option><option>キャプション</option></select>
             <button id="applyRole" type="button">役割を変更して再判定</button>
             <button id="resetRole" type="button">自動判定に戻す</button>
-            <label for="exclusionScope">検査除外</label><select id="exclusionScope"><option value="text">用語・記号・反応式など（書式検査は続ける）</option><option value="all">すべての検査</option></select>
+            <label for="exclusionScope">検査除外</label><select id="exclusionScope"><option value="text">用語・記号・化学式など（書式検査は続ける）</option><option value="all">すべての検査</option></select>
             <button id="excludeSelection" type="button">選択した文字要素を除外</button>
             <p>役割変更・除外は、選択文字を含むPDFの文字要素全体に適用します。</p>
           </div>
@@ -173,6 +169,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="./vendor/pptx-preview/pptx-preview.umd.js"></script>
-  <script type="module" src="./app.js?v=36"></script>
-  <script type="module" src="./feedback.mjs?v=36"></script></body>
+  <script type="module" src="./app.js?v=37"></script>
+  <script type="module" src="./feedback.mjs?v=37"></script></body>
 </html>
