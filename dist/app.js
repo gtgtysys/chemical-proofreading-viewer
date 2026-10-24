@@ -1,21 +1,19 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import { schoolChecks } from './school-checks.mjs?v=37';
-import { curriculumChecks } from './curriculum.mjs?v=37';
-import { mathVariables, unitSpans, scriptLabelSpans, mathText } from './math-roles.mjs?v=37';
-import { formulaChecks } from './formulas.mjs?v=37';
-import { Lexicon } from "./lexicon.mjs?v=37";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=37';
-import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=37';
+import { schoolChecks } from './school-checks.mjs?v=38';
+import { curriculumChecks } from './curriculum.mjs?v=38';
+import { mathVariables, unitSpans, scriptLabelSpans, mathText } from './math-roles.mjs?v=38';
+import { formulaChecks } from './formulas.mjs?v=38';
+import { Lexicon } from "./lexicon.mjs?v=38";
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=38';
+import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=38';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
 const $ = (selector) => document.querySelector(selector);
 const elements = {
   fileInput: $("#fileInput"),
-  dictionaryStatus: $("#dictionaryStatus"),
   searchToggleButton: $("#searchToggleButton"),
   closeSearchButton: $("#closeSearchButton"),
-  reloadButton: $("#reloadButton"),
   dropZone: $("#dropZone"),
   documentArea: $("#documentArea"),
   loadingState: $("#loadingState"),
@@ -112,7 +110,6 @@ function escapeRegExp(value) {
 function compileDictionary(dictionary) {
   if (dictionary.schemaVersion === 2 && Array.isArray(dictionary.entries)) {
     state.lexicon = new Lexicon(dictionary, state.generalLexicon, state.additionalVocabulary, state.compoundComponents);
-    elements.dictionaryStatus.textContent = `化学${dictionary.entries.length}語＋一般語`;
     return;
   }
   if (!dictionary || dictionary.schemaVersion !== 1 || !Array.isArray(dictionary.terms) || !Array.isArray(dictionary.patterns)) {
@@ -142,8 +139,6 @@ function compileDictionary(dictionary) {
   state.rules = compiled;
   state.units = Array.isArray(dictionary.units) ? dictionary.units.filter((unit) => typeof unit === "string" && unit.trim()) : [];
   state.styleSettings = { ...FALLBACK_DICTIONARY.style, ...(dictionary.style || {}) };
-  elements.dictionaryStatus.textContent = `${dictionary.name || "カスタム辞書"}・${compiled.term.length + compiled.symbol.length + compiled.formula.length}規則`;
-  elements.dictionaryStatus.title = dictionary.description || elements.dictionaryStatus.textContent;
 }
 
 async function loadDefaultDictionary() {
@@ -167,13 +162,11 @@ async function loadDefaultDictionary() {
     state.curriculumPolicy = curriculumPolicy;
     state.compoundComponents=components;
     state.lexicon = new Lexicon(chemistry, general, additions, components);
-    elements.dictionaryStatus.textContent = `化学${chemistry.entries.length}語＋一般${general.words.length.toLocaleString()}表記`;
-    elements.dictionaryStatus.title = '正表記・追加語彙・118元素と化合物名の構成要素で照合。一般語: JMdict / EDRDG (CC BY-SA 4.0)';
   } catch (error) {
     console.warn(error);
+    showToast('用語辞書の読み込みに失敗しました。ページを再読み込みしてください。');
     compileDictionary(FALLBACK_DICTIONARY);
     state.rules.term = [];
-    elements.dictionaryStatus.textContent = '語彙辞書の読込失敗：用語照合は無効';
   }
 }
 
@@ -359,19 +352,18 @@ async function openPdf(file) {
       standardFontDataUrl: new URL('./vendor/standard_fonts/',import.meta.url).href,
       wasmUrl: new URL('./vendor/wasm/',import.meta.url).href,
     }).promise;
-    $('#zoomToolbar').hidden=false;
     elements.pageCount.textContent = state.pdf.numPages;
     for (let pageNumber = 1; pageNumber <= state.pdf.numPages; pageNumber += 1) {
       elements.loadingText.textContent = `${pageNumber} / ${state.pdf.numPages} ページを解析しています`;
       await renderAndExtractPage(pageNumber);
     }
+    $('#zoomToolbar').hidden=false;
     analyzeDocument();
     elements.summary.hidden = false;
     elements.filters.hidden = false;
     elements.candidateActions.hidden = false;
     const extractedItems = state.items.filter((item) => !item.virtual);
     elements.itemCount.textContent = extractedItems.length.toLocaleString("ja-JP");
-    elements.reloadButton.disabled = false;
     elements.searchToggleButton.disabled = false;
     elements.dropZone.hidden = true;
     showToast(state.items.length ? `${state.pdf.numPages}ページを解析しました。` : "文字データがないため、自動判定できません（画像PDF）。");
@@ -388,6 +380,62 @@ async function openPdf(file) {
 function pageScrollTop(shell) {
   return elements.documentArea.scrollTop+shell.getBoundingClientRect().top-elements.documentArea.getBoundingClientRect().top-65;
 }
+let paintingPdf=false, pdfPaintRequested=false, pdfPaintTimer;
+function schedulePdfResolution() {
+  clearTimeout(pdfPaintTimer);
+  pdfPaintTimer=setTimeout(refreshPdfResolution,80);
+}
+async function refreshPdfResolution() {
+  pdfPaintRequested=true;
+  if(paintingPdf) return;
+  paintingPdf=true;
+  try {
+    while(pdfPaintRequested) {
+      pdfPaintRequested=false;
+      if(state.documentType!=='pdf' || !state.pdf) continue;
+      const pdf=state.pdf,area=elements.documentArea.getBoundingClientRect();
+      for(const record of state.pages) {
+        if(state.pdf!==pdf) break;
+        const rect=record.shell.getBoundingClientRect();
+        const visible=rect.bottom>area.top-200 && rect.top<area.bottom+200;
+        if(!visible) {
+          if(record.canvas!==record.baseCanvas) {
+            const old=record.canvas;
+            old.replaceWith(record.baseCanvas);
+            record.canvas=record.baseCanvas;
+            record.density=record.baseDensity;
+            old.width=old.height=0;
+          }
+          continue;
+        }
+        const density=window.devicePixelRatio*state.zoom;
+        if(Math.abs(record.density-density)<.01) continue;
+        const canvas=document.createElement('canvas');
+        canvas.width=Math.ceil(record.viewport.width*density);
+        canvas.height=Math.ceil(record.viewport.height*density);
+        canvas.style.width=record.viewport.width+'px';
+        canvas.style.height=record.viewport.height+'px';
+        const task=record.pdfPage.render({canvasContext:canvas.getContext('2d',{alpha:false}),viewport:record.viewport,transform:[density,0,0,density,0,0]});
+        record.paintTask=task;
+        try {
+          await task.promise;
+          if(state.pdf===pdf && record.shell.isConnected && Math.abs(density-window.devicePixelRatio*state.zoom)<.01) {
+            const old=record.canvas;
+            old.replaceWith(canvas);
+            record.canvas=canvas;
+            record.density=density;
+            if(old!==record.baseCanvas) old.width=old.height=0;
+          } else canvas.width=canvas.height=0;
+        } catch(error) {
+          canvas.width=canvas.height=0;
+          if(error.name!=='RenderingCancelledException') console.warn('PDFの拡大描画',error);
+        } finally {record.paintTask=null;}
+      }
+    }
+  } finally {paintingPdf=false;}
+}
+elements.documentArea.addEventListener('scroll',schedulePdfResolution,{passive:true});
+window.addEventListener('resize',schedulePdfResolution);
 function setZoom(value) {
   if(state.documentType!=='pdf' || !state.pdf) return;
   const prior=state.zoom;
@@ -399,6 +447,8 @@ function setZoom(value) {
   $('#zoomValue').textContent=Math.round(state.zoom*100)+'%';
   $('#zoomOut').disabled=state.zoom<=.5;
   $('#zoomIn').disabled=state.zoom>=3;
+  for(const page of state.pages) page.paintTask?.cancel();
+  refreshPdfResolution();
 }
 $('#zoomOut').addEventListener('click',()=>setZoom(state.zoom-.25));
 $('#zoomIn').addEventListener('click',()=>setZoom(state.zoom+.25));
@@ -529,7 +579,6 @@ async function openPptx(file) {
     elements.filters.hidden = false;
     elements.candidateActions.hidden = false;
     elements.itemCount.textContent = state.items.length.toLocaleString("ja-JP");
-    elements.reloadButton.disabled = false;
     elements.searchToggleButton.disabled = false;
     elements.dropZone.hidden = true;
     showToast(`${presentation?.slides?.length || slides.length}枚のスライドを解析しました。`);
@@ -574,7 +623,6 @@ async function renderAndExtractPage(pageNumber) {
   canvas.style.width = `${viewport.width}px`;
   canvas.style.height = `${viewport.height}px`;
   const context = canvas.getContext("2d", { alpha: false });
-  context.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
   const highlightLayer = document.createElement("div");
   highlightLayer.className = "highlight-layer";
   const textLayer = document.createElement("div");
@@ -582,7 +630,7 @@ async function renderAndExtractPage(pageNumber) {
   shell.append(pageLabel, canvas, highlightLayer, textLayer);
   elements.pages.append(shell);
 
-  await page.render({ canvasContext: context, viewport }).promise;
+  await page.render({ canvasContext: context, viewport, transform:[window.devicePixelRatio,0,0,window.devicePixelRatio,0,0] }).promise;
   const textContent = await page.getTextContent({ includeMarkedContent: true });
   const pageItems = [];
 
@@ -635,7 +683,7 @@ async function renderAndExtractPage(pageNumber) {
     pageItems.push(item);
     state.items.push(item);
   }
-  state.pages.push({ pageNumber, shell, viewport, items: pageItems });
+  state.pages.push({ pageNumber, shell, viewport, items: pageItems, pdfPage:page, baseCanvas:canvas, canvas, baseDensity:window.devicePixelRatio, density:window.devicePixelRatio });
 }
 
 function addRuleCandidates(candidates, item, rules, type, label, severity = "medium") {
@@ -1335,13 +1383,6 @@ $('#applyPreferences').addEventListener('click',()=>{
   try {state.preferences[state.profile]=parsePreferences($('#preferenceInput').value);if(state.pdf) analyzeDocument();showToast('表記ルールを適用しました。');}
   catch(error){showToast(error.message);}
 });
-$('#updatedPdfInput').addEventListener('change',async event=>{
-  const file=event.target.files?.[0];if(!file) return;
-  if(!state.pdf) {showToast('比較する旧PDFを先に開いてください。');event.target.value='';return;}
-  state.revisionBaseline=sessionSnapshot();
-  await openPdf(file);if(!state.pdf) state.revisionBaseline=null;
-  event.target.value='';
-});
 renderProfile();
 
 function normalizeComparable(value) {
@@ -1369,7 +1410,6 @@ $('#findSelectedFont').addEventListener('click',()=>{
 });
 
 elements.fileInput.addEventListener("change", (event) => openDocument(event.target.files?.[0]));
-elements.reloadButton.addEventListener("click", () => state.file && openDocument(state.file));
 elements.searchToggleButton.addEventListener("click", () => {
   const opening = elements.searchForm.hidden;
   elements.searchForm.hidden = !opening;
