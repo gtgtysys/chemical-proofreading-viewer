@@ -1,12 +1,13 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import { schoolChecks } from './school-checks.mjs?v=35';
-import { curriculumChecks } from './curriculum.mjs?v=35';
-import { formulaChecks } from './formulas.mjs?v=35';
-import { Lexicon } from "./lexicon.mjs?v=35";
-import { checkReaction, findReactionRanges } from "./reactions.mjs?v=35";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=35';
-import { reactionRows } from './pdf-reactions.mjs?v=35';
-import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=35';
+import { schoolChecks } from './school-checks.mjs?v=36';
+import { curriculumChecks } from './curriculum.mjs?v=36';
+import { mathVariables, unitSpans, scriptLabelSpans, mathText } from './math-roles.mjs?v=36';
+import { formulaChecks } from './formulas.mjs?v=36';
+import { Lexicon } from "./lexicon.mjs?v=36";
+import { checkReaction, findReactionRanges } from "./reactions.mjs?v=36";
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=36';
+import { reactionRows } from './pdf-reactions.mjs?v=36';
+import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=36';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
@@ -181,7 +182,8 @@ function isUnitText(text) {
   const compact = normalizeForSearch(text);
   return state.units.some((unit) => {
     const normalizedUnit = normalizeForSearch(unit);
-    if (compact === normalizedUnit) return true;
+    // A bare symbol is ambiguous (m: metre or mass, F: farad or force).
+    // Contextual inference below handles units without an attached value.
     const valueWithUnit = new RegExp(`^[+−-]?(?:\\d+(?:[.,]\\d+)?(?:[×x]10[+−-]?\\d+)?)${escapeRegExp(normalizedUnit)}$`);
     return valueWithUnit.test(compact);
   });
@@ -212,6 +214,15 @@ function inferDocumentRoles() {
   }
   for(const row of textRows(state.items)) {
     const members=row.sourceIds.map(id=>byId.get(id)).filter(item=>item.role!=='test-id');
+    const expression=mathText(row,members);
+    const units=unitSpans(expression),variables=mathVariables(expression,[...units,...scriptLabelSpans(row,state.items)]);
+    const covered=new Map();
+    for(const mark of [...units,...variables]) for(const p of row.charMap.slice(mark.start,mark.start+mark.length).filter(Boolean)) {
+      const key=mark.kind+':'+p.itemId;
+      if(!covered.has(key)) covered.set(key,{kind:mark.kind,item:byId.get(p.itemId),offsets:new Set()});
+      covered.get(key).offsets.add(p.offset);
+    }
+    for(const {kind,item,offsets} of covered.values()) if(item && item.role==='本文' && offsets.size>=item.text.trim().length) item.role=kind==='unit'?'単位':'変数';
     // Size is a role cue only, never a mismatch warning. Japanese Gothic headings
     // can use a Medium face whose PDF font name does not carry a Bold flag.
     const page=state.pages.find(page=>page.pageNumber===row.pageNumber),bodySize=bodySizes.get(row.pageNumber);
@@ -768,7 +779,7 @@ function detectCandidates(items) {
       if(candidates.some(candidate=>candidate.type==='curriculum' && candidate.ruleKind==='term' && normalizeComparable(candidate.text)===normalizeComparable(hit.text) && segments.every(segment=>candidate.segments.some(s=>s.itemId===segment.itemId && s.start<=segment.start && s.end>=segment.end)))) continue;
       const names = [...new Set(hit.options.map(e=>e.term))];
       candidates.push(makeCandidate({item,segments,type:'term',label:'用語候補',severity:'medium',text:hit.text,
-        suggestion:names.join(' ／ '),reason:`正表記辞書の「${names.join('・')}」と1文字の挿入・脱落・置換の差があります。誤りとは断定しません。`}));
+        suggestion:names.join(' ／ '),reason:`正表記辞書の「${names.join('・')}」と1文字の挿入・脱落・置換の差があります。候補の表記を確認してください。`}));
       }
     }
   }
@@ -1300,7 +1311,7 @@ function renderCoverage() {
   if(missing.length) notes.push(`文字を抽出できないページ：${missing.join('、')}。画像内の文字は検査できません。`);
   if(corrupted.length) notes.push(`文字化けの疑いがあるページ：${corrupted.join('、')}。`);
   if(uncertain) notes.push(`フォント名を特定できない文字要素が${uncertain}件あります。元のフォント名に基づく比較はできません。`);
-  notes.push('画像内の式・文字は検査対象外です。指摘ゼロは検査完了を保証しません。');
+  notes.push('候補をクリックすると、該当箇所と判定理由を確認できます。');
   $('#coverageReport').textContent=notes.join(' ');
 }
 function renderRevision(carriedCount) {

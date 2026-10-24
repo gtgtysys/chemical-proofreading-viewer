@@ -10,7 +10,7 @@ for(const entry of policy.entries.filter(e=>e.kind==='term')) for(const term of 
   assert(hit,term);
   assert.equal(hit.text,term);
   assert.equal(hit.suggestion,entry.preferred);
-  assert(hit.reason.includes('断定'),'editorial preferences must not be presented as automatic errors');
+  assert.equal(hit.reason,entry.note,'explanations must name the actual editorial check without generic boilerplate');
 }
 for(const text of ['化合物','貴ガス','共有結合の結晶','両性金属','両性酸化物','水酸化鉄（Ⅲ）','アルデヒド','ケトン','活性化エネルギー','凝華','ヒドロキシ基','カルボキシ基','鏡像異性体']) assert.equal(check(text).length,0,text);
 assert(check('気体から固体になる過程を昇華という。').some(h=>h.ruleId==='deposition'));
@@ -25,9 +25,15 @@ assert.equal(check('3～12族が遷移元素である。').length,0);
 assert.equal(check('3～11族が遷移元素である。12族元素は含める場合と含めない場合がある。').length,0);
 assert(check('Fe（OH）₃を三価の弱塩基とする。').some(h=>h.ruleId==='ferric-hydroxide'));
 assert(curriculumChecks([row('標準状態での気体を考える。')],policy).some(h=>h.ruleId==='standard-conditions'));
-assert(curriculumChecks([row('10 ℃、1.013×10⁵ Paとする。')],policy).some(h=>h.ruleId==='standard-conditions'));
-assert(curriculumChecks([row('気体について考える。'),row(header,2)],policy).some(h=>h.ruleId==='standard-conditions'),'conditions on a later page do not satisfy the introduction rule');
-assert.equal(check('標準状態で測定する。').length,0);
+assert(!curriculumChecks([row('10 ℃、1.013×10⁵ Paとする。')],policy).some(h=>h.ruleId==='standard-conditions'),'no occurrence means no standard-state warning');
+assert(!curriculumChecks([row('気体について考える。')],policy).some(h=>h.ruleId==='standard-conditions'));
+assert.equal(check('標準状態で測定する。').filter(h=>h.ruleId==='standard-conditions').length,1,'a definition in a different sentence is not this occurrence annotation');
+for(const sample of ['標準状態（0 ℃，1.013×10⁵ Pa）で測定する。','標準状態（0°C、101325 Pa）','標準\n状態（0 ℃、1.013 × 10^5 Pa）']) assert.equal(check(sample).filter(h=>h.ruleId==='standard-conditions').length,0,sample);
+const standard=curriculumChecks([row('題名\n\n気体を標準状態で測定する。')],policy).find(h=>h.ruleId==='standard-conditions');
+assert.equal(standard.text,'標準状態');
+assert.equal(standard.start,'題名\n\n気体を'.length);
+assert(!standard.reason.includes('投稿された教材方針'));
+assert(curriculumChecks([row('標準状態（10 ℃、1.013×10⁵ Pa）')],policy).some(h=>h.ruleId==='standard-conditions'),'10°C is not 0°C');
 const wrapped=row(header+'ヒドロキ\nシル基をもつ。');
 const hit=curriculumChecks([wrapped],policy).find(h=>h.ruleId==='hydroxy');
 assert.equal(hit.text,'ヒドロキ\nシル基');

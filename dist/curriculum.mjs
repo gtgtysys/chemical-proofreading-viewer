@@ -9,22 +9,23 @@ export function curriculumChecks(blocks, policy) {
     return {text,offsets};
   };
   const indexed=blocks.map(row=>({row,...index(row)}));
-  const firstPage=Math.min(...blocks.map(b=>b.pageNumber || 1));
-  const introduction=compact(blocks.flatMap(b=>b.sourceRows || [b]).filter(r=>(r.pageNumber || 1)===firstPage).map(r=>r.text).join('\n')).slice(0,1600);
-  const standardPresent=/(?<![\d.])0(?:℃|°C)/.test(introduction) && /(?:1[.,]013(?:×|x|·)10\^?5Pa|1013(?:00|25)Pa)/.test(introduction);
   const add=(entry,row,text,offsets,start,length)=>{
     if(length<1) return;
     const from=offsets[start],end=offsets[start+length-1]+1;
     hits.push({row,start:from,length:end-from,text:row.text.slice(from,end),type:'curriculum',label:entry.label || '教科書改訂・教材表記',ruleId:entry.id,ruleKind:entry.kind,suggestion:entry.preferred,
-      reason:`教材表記の確認：${entry.note} 誤りの断定や自動置換は行いません。`});
+      reason:entry.note});
   };
   for(const entry of policy.entries) {
-    if(entry.kind==='standard-conditions') {
-      const first=indexed.find(b=>b.text.length);
-      if(first && !standardPresent) add(entry,first.row,first.text,first.offsets,0,Math.min(20,first.text.length));
-      continue;
-    }
     for(const {row,text,offsets} of indexed) {
+      if(entry.kind==='standard-conditions') for(const m of text.matchAll(/標準状態/g)) {
+        // Check the annotation on this occurrence, never the title or unrelated
+        // numbers elsewhere in the document. Keep the highlighted span on the word.
+        const tail=text.slice(m.index+m[0].length);
+        const stop=tail.search(/[。;；]/),local=tail.slice(0,stop<0?90:Math.min(stop,90));
+        const temperature=/(?<![\d.])0(?:℃|°C)/.test(local);
+        const pressure=/(?:1[.,]013(?:×|x|·)10\^?5Pa|1013(?:00|25)Pa)/.test(local);
+        if(!temperature || !pressure) add(entry,row,text,offsets,m.index,m[0].length);
+      }
       if(entry.kind==='term') for(const term of entry.terms || []) {
         const needle=compact(term);let start=0;
         while(needle && (start=text.indexOf(needle,start))>=0) {

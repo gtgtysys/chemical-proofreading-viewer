@@ -6,7 +6,7 @@
     <meta name="description" content="PDF・PPTXを端末内で解析し、化学用語・化学式・書式の候補を確認するビューア" />
     <title>化学PDF校正ビューア</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23102736'/%3E%3Cpath d='M22 12h20v5l-4 7v7l10 16a5 5 0 0 1-4 8H20a5 5 0 0 1-4-8l10-16v-7l-4-7z' fill='none' stroke='%236fd5c2' stroke-width='4'/%3E%3Cpath d='M21 44h22' stroke='%23f0b85a' stroke-width='4'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=35" />
+    <link rel="stylesheet" href="./styles.css?v=36" />
   </head>
   <body>
     <header class="topbar">
@@ -98,7 +98,7 @@
           <div class="drop-symbol" aria-hidden="true">PDF</div>
           <h2>確認するPDF・PPTXをここにドロップ</h2>
           <p>または右上の「PDF・PPTXを開く」から選択してください。</p>
-          <p class="privacy-note">PDF・PPTXはブラウザー内だけで読み込み、外部へ送信しません。</p>
+          <p class="privacy-note">PDF・PPTXの解析はブラウザー内で実行します。</p>
         </div>
         <div id="loadingState" class="loading-state" hidden>
           <div class="spinner" aria-hidden="true"></div>
@@ -146,7 +146,7 @@
             <input id="dictionaryProposalTerm" maxlength="80" autocomplete="off" required>
             <label for="dictionaryProposalNote">説明（任意）</label>
             <textarea id="dictionaryProposalNote" rows="2" maxlength="1000"></textarea>
-            <p>ログイン不要です。機密資料の文章は含めないでください。</p>
+            <p>共有できる語や、自作の短い例を報告してください。</p>
             <p id="dictionaryProposalError" role="status"></p>
             <a id="dictionaryProposalLink" target="_blank" rel="noopener noreferrer">報告フォームで送る</a>
             <button id="closeDictionaryProposal" type="button">閉じる</button>
@@ -160,7 +160,7 @@
             <button id="findSelectedText" type="button">選択した文字を検索</button>
 <button id="findSelectedFont" type="button">同じフォントを検索</button>
 <label for="roleSelect">選択した文字要素の役割</label>
-            <select id="roleSelect"><option>本文</option><option>見出し</option><option>化学式</option><option>単位</option><option>番号</option><option>係数</option><option>ページ番号</option><option>キャプション</option></select>
+            <select id="roleSelect"><option>本文</option><option>見出し</option><option>化学式</option><option>単位</option><option>変数</option><option>番号</option><option>係数</option><option>ページ番号</option><option>キャプション</option></select>
             <button id="applyRole" type="button">役割を変更して再判定</button>
             <button id="resetRole" type="button">自動判定に戻す</button>
             <label for="exclusionScope">検査除外</label><select id="exclusionScope"><option value="text">用語・記号・反応式など（書式検査は続ける）</option><option value="all">すべての検査</option></select>
@@ -173,6 +173,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="./vendor/pptx-preview/pptx-preview.umd.js"></script>
-  <script type="module" src="./app.js?v=35"></script>
-  <script type="module" src="./feedback.mjs?v=35"></script></body>
+  <script type="module" src="./app.js?v=36"></script>
+  <script type="module" src="./feedback.mjs?v=36"></script></body>
 </html>

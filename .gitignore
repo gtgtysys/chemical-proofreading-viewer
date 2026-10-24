@@ -35,3 +35,4 @@ node_modules/
 !/dictionary-sources/test-line-breaks.mjs
 !/dictionary-sources/test-text-flows.mjs
 !/dictionary-sources/test-curriculum.mjs
+!/dictionary-sources/test-math-roles.mjs
