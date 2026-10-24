@@ -6,7 +6,7 @@
     <meta name="description" content="PDF・PPTXを端末内で解析し、化学用語・化学式・書式の候補を確認するビューア" />
     <title>化学PDF校正ビューア</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23102736'/%3E%3Cpath d='M22 12h20v5l-4 7v7l10 16a5 5 0 0 1-4 8H20a5 5 0 0 1-4-8l10-16v-7l-4-7z' fill='none' stroke='%236fd5c2' stroke-width='4'/%3E%3Cpath d='M21 44h22' stroke='%23f0b85a' stroke-width='4'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css?v=38" />
+    <link rel="stylesheet" href="./styles.css?v=39" />
   </head>
   <body>
     <header class="topbar">
@@ -120,6 +120,10 @@
         <div id="detail" class="detail" hidden>
           <span id="detailType" class="detail-type"></span>
           <h3 id="detailText"></h3>
+          <div id="suggestionBox" class="suggestion-box" hidden>
+            <span>推奨候補</span>
+            <strong id="detailSuggestion"></strong>
+          </div>
           <dl class="metadata">
             <div><dt>ページ</dt><dd id="detailPage"></dd></div>
             <div><dt>役割</dt><dd id="detailRole"></dd></div>
@@ -127,10 +131,6 @@
             <div><dt>サイズ</dt><dd id="detailSize"></dd></div>
             <div><dt>書式</dt><dd id="detailStyle"></dd></div>
           </dl>
-          <div id="suggestionBox" class="suggestion-box" hidden>
-            <span>推奨候補</span>
-            <strong id="detailSuggestion"></strong>
-          </div>
           <button id="dictionaryProposalButton" type="button" class="secondary-button">正しい語を辞書に追加提案</button>
           <form id="dictionaryProposalForm" class="workflow-settings" hidden>
             <label for="dictionaryProposalTerm">追加する正しい語</label>
@@ -164,6 +164,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="./vendor/pptx-preview/pptx-preview.umd.js"></script>
-  <script type="module" src="./app.js?v=38"></script>
-  <script type="module" src="./feedback.mjs?v=38"></script></body>
+  <script type="module" src="./app.js?v=39"></script>
+  <script type="module" src="./feedback.mjs?v=39"></script></body>
 </html>

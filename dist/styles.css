@@ -216,7 +216,7 @@ button, label { -webkit-tap-highlight-color: transparent; }
 .metadata div { display: grid; grid-template-columns: 76px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .metadata dt { color: var(--muted); font-size: 13px; }
 .metadata dd { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
-.suggestion-box { margin-top: 16px; padding: 12px; background: var(--amber-soft); border-left: 3px solid var(--amber); }
+.suggestion-box { margin: 0 0 16px; padding: 12px; background: var(--amber-soft); border-left: 3px solid var(--amber); }
 .suggestion-box span { display: block; color: #815015; font-size: 12px; }
 .suggestion-box strong { display: block; margin-top: 4px; font-size: 18px; }
 
