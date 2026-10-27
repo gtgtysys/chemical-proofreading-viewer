@@ -38,3 +38,4 @@ node_modules/
 !/dictionary-sources/test-math-roles.mjs
 
 !/dictionary-sources/test-compound-names.mjs
+!/dictionary-sources/test-symbol-context.mjs

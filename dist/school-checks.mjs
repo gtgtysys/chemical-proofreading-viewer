@@ -1,5 +1,5 @@
 // Conservative school-chemistry checks. Each result maps back to source text.
-import {mathVariables,unitSpans,scriptLabelSpans,mathText} from './math-roles.mjs?v=36';
+import {mathVariables,unitSpans,scriptLabelSpans,mathText} from './math-roles.mjs?v=40';
 export function schoolChecks(rows, items) {
   const hits=[], byId=new Map(items.map(item=>[item.id,item]));
   const quantities={圧力:'pP',体積:'V',温度:'T',絶対温度:'T',物質量:'n',質量:'m',密度:'ρ',濃度:'c',時間:'t',エンタルピー:'H',エントロピー:'S',気体定数:'R'};
@@ -32,6 +32,7 @@ export function schoolChecks(rows, items) {
     marked.push(...mathVariables(expression,protectedRanges));
     const uniqueMarks=[...new Map(marked.map(mark=>[mark.kind+':'+mark.start+':'+mark.length,mark])).values()];
     for(const mark of uniqueMarks) {
+      if(mark.kind!=='unit' && /^[\p{Script=Greek}∆]+$/u.test(row.text.slice(mark.start,mark.start+mark.length))) continue;
       const sources=[...new Set(row.charMap.slice(mark.start,mark.start+mark.length).filter(Boolean).map(p=>p.itemId))].map(id=>byId.get(id));
       if(!sources.length || sources.some(item=>!item || /^(serif|sans-serif|monospace|不明)(?:\s|$)/i.test(item.font))) continue;
       if(mark.kind==='quantity' && sources.some(item=>!item.italic)) add(mark.start,mark.length,'format','物理量の書体','物理量記号が立体です。物理量を表す文字はイタリック体（斜体）にします。','イタリック体');

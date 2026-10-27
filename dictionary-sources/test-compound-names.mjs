@@ -4,6 +4,8 @@ const read=name=>JSON.parse(fs.readFileSync(new URL('../dist/dictionaries/'+name
 const data=read('compound-components.json'),lex=new Lexicon(read('school-chemistry.json'),read('general-runtime.json'),{entries:[]},data);
 assert.equal(data.elements.length,118);assert.equal(new Set(data.elements.map(e=>e.atomicNumber)).size,118);
 for(const word of compoundVocabulary(data)) assert.equal(lex.optionsFor(word).length,0,word);
+for(const element of data.elements) assert.equal(lex.scan(element.name+'イオン').length,0,element.name+'イオン');
+for(const word of ['銅イオン','鉄イオン','金イオン','銅\nイオン','鉄 イオン','トランス型','トランス\n型','トラ\nンス型','シス・トランス型']) assert.equal(lex.scan(word).length,0,word);
 for(const word of ['二酸化炭素','四酸化二窒素','五塩化リン','塩化鉄','水酸化カルシウム','炭酸水素ナトリウム','硫酸アンモニウム','塩化タングステン']) assert.equal(lex.scan(word).length,0,word);
 for(const [word,expected] of [['塩化ルピジウム','塩化ルビジウム'],['酸化タングステソ','酸化タングステン'],['塩花ナトリウム','塩化ナトリウム'],['硫化マグネシウ厶','硫化マグネシウム']]) assert(lex.optionsFor(word,'化学溶液').some(e=>e.term===expected),word);
 assert.equal(lex.scan('塩化タング\nステン').length,0);

@@ -3,7 +3,7 @@ export function compoundVocabulary(data) {
   if(!data) return [];
   const elements=[...data.elements.map(e=>e.name),...Object.keys(data.aliases),...data.otherCations];
   const prefixes=[...data.prefixes,...Object.keys(data.prefixAliases)];
-  return [...new Set([...elements,...prefixes.flatMap(prefix=>elements.map(name=>prefix+name))])];
+  return [...new Set([...elements,...elements.map(name=>name+'イオン'),...prefixes.flatMap(prefix=>elements.map(name=>prefix+name))])];
 }
 
 export function compoundOptions(word,data,oneEdit) {

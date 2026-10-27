@@ -145,9 +145,10 @@ export function scriptGroup(text) {
 }
 export function formulaEvidence(token,context='') {
   if(!/^[A-Za-z0-9₀-₉⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻+−-]+$/.test(token)) return false;
-  if(/[₀-₉⁺⁻]/.test(token)) return true;
   const letters=token.replace(/[0-9⁰¹²³⁴⁵⁶⁷⁸⁹+−-]/g,'');
-  const parts=letters.match(/[A-Z][a-z]?/g)||[];
+  const parts=letters.replace(/[₀-₉⁺⁻]/g,'').match(/[A-Z][a-z]?/g)||[];
+  if(parts.length===1) return /(?:化学式|分子式|組成式|元素記号|反応式|分子|→|⇄|⇌)/.test(context);
+  if(/[₀-₉⁺⁻]/.test(token)) return true;
   // Mixed-case compounds and multi-element formulas with counts are stronger than variable labels.
   if(parts.length>=2 && (/[a-z]/.test(letters) || /\d/.test(token))) return true;
   return /(?:化学式|分子式|組成式|元素記号|反応式|イオン|分子|酸化|還元|水素|酸素|窒素)/.test(context);

@@ -1,5 +1,6 @@
-import {checkFormula} from './reactions.mjs?v=29';
-import {expectedSubscript} from './detection.mjs?v=29';
+import {checkFormula} from './reactions.mjs?v=40';
+import {expectedSubscript} from './detection.mjs?v=40';
+import {chemicalSpan} from './chemical-spans.mjs?v=40';
 
 // Check the notation of a parsed chemical species, not a list of named compounds.
 export function formulaChecks(row,items) {
@@ -7,6 +8,7 @@ export function formulaChecks(row,items) {
   for(const match of row.text.matchAll(/[A-Z][A-Za-zΙΟ0-9₀-₉()\[\]⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻^−-]*(?:\+)?/g)) {
     const token=match[0];
     if(/[A-Za-z]/.test(row.text[match.index-1]||'')) continue;
+    if(!chemicalSpan(row,match.index,token.length,items)) continue;
     const parsed=checkFormula(token);
     const chemicalContext=/(?:化学式|分子式|組成式|反応式|分子|イオン|酸素|水素|窒素|塩素|試薬)/.test(row.text);
     if(parsed.status==='unknown' && chemicalContext && /[a-zΙΟ0-9₀-₉]/.test(token) && /[A-Za-z].*[A-Za-zΙΟ]/.test(token)) {

@@ -1,11 +1,12 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import { schoolChecks } from './school-checks.mjs?v=38';
-import { curriculumChecks } from './curriculum.mjs?v=38';
-import { mathVariables, unitSpans, scriptLabelSpans, mathText } from './math-roles.mjs?v=38';
-import { formulaChecks } from './formulas.mjs?v=38';
-import { Lexicon } from "./lexicon.mjs?v=38";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=38';
-import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=38';
+import {chemicalSpan} from './chemical-spans.mjs?v=40';
+import { schoolChecks } from './school-checks.mjs?v=40';
+import { curriculumChecks } from './curriculum.mjs?v=40';
+import { mathVariables, unitSpans, scriptLabelSpans, mathText } from './math-roles.mjs?v=40';
+import { formulaChecks } from './formulas.mjs?v=40';
+import { Lexicon } from "./lexicon.mjs?v=40";
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=40';
+import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=40';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
@@ -208,6 +209,10 @@ function inferDocumentRoles() {
   }
   for(const row of textRows(state.items)) {
     const members=row.sourceIds.map(id=>byId.get(id)).filter(item=>item.role!=='test-id');
+    for(const item of members) if(item.role==='化学式' && !state.roles[item.id]) {
+      const start=row.charMap.findIndex(p=>p?.itemId===item.id);
+      if(!chemicalSpan(row,start,item.text.length,state.items)) item.role='本文';
+    }
     const expression=mathText(row,members);
     const units=unitSpans(expression),variables=mathVariables(expression,[...units,...scriptLabelSpans(row,state.items)]);
     const covered=new Map();
@@ -694,6 +699,7 @@ function addRuleCandidates(candidates, item, rules, type, label, severity = "med
       const segments = item.charMap
         ? segmentsFromCharacterMap(item.charMap, match.index, match[0].length)
         : [{ itemId: item.id, start: match.index, end: match.index + match[0].length, total: item.text.length }];
+      if((type==='symbol' || type==='formula') && !chemicalSpan(item,match.index,match[0].length,state.items)) continue;
       if (rule.suggestion === 'H₂O' && expectedSubscript(match[0], segments, state.items)) continue;
       if (type === "formula" || type === "symbol") {
         for (const segment of segments) {
@@ -767,6 +773,7 @@ function addDocumentRuleCandidates(candidates, index, rules, type, label, severi
     let match;
     while ((match = rule.pattern.exec(index.text)) !== null) {
       const segments = segmentsForRange(index, match.index, match[0].length);
+      if((type==='symbol' || type==='formula') && !chemicalSpan(index,match.index,match[0].length,state.items)) continue;
       if (rule.suggestion === 'H₂O' && expectedSubscript(match[0], segments, state.items)) continue;
       const itemIds = [...new Set(segments.map((segment) => segment.itemId))];
       const item = state.items.find((entry) => entry.id === itemIds[0]);
@@ -855,6 +862,8 @@ function detectCandidates(items) {
     for (const token of matches) {
       const row=virtualLines.find(line=>line.sourceIds.includes(item.id));
       if (token.length < 2 || !isLikelyFormulaToken(token) || !formulaEvidence(token,row?.text || item.text)) continue;
+      const tokenStart=row?.charMap.findIndex(p=>p?.itemId===item.id && p.offset===item.text.indexOf(token));
+      if(row && !chemicalSpan(row,tokenStart,token.length,extractedItems)) continue;
       if (/^(?:見出し|キャプション|単位|番号|ページ番号)/.test(item.role)) continue;
       const following=row?.text.slice(row.text.indexOf(token)+token.length) || '';
       const context=/^[\s]*[\p{Script=Hiragana}]/u.test(following)?'本文内':'独立・列挙';

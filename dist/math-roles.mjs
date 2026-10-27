@@ -38,11 +38,19 @@ export function unitSpans(text) {
   const pattern=/(?<![A-Za-z])(?:mmol|kmol|mol|kg|mg|mL|kPa|MPa|Pa|kJ|cm|nm|Hz|g|L|J|K|s|m|V|A|W|N|C|F|S|Ω)(?![A-Za-z])/g;
   for(const m of text.matchAll(pattern)) {
     const prefix=text.slice(0,m.index);
-    const value=/(?<![A-Za-z0-9₀-₉])\d+(?:[.,]\d+)?[\s·⋅/()]*$/.test(prefix);
+    const number=prefix.match(/(?<![A-Za-z0-9₀-₉])\d+(?:[.,]\d+)?[\s·⋅/()]*$/);
+    const value=Boolean(number) && !/[A-Za-z₀-₉][\s]*[/*÷^][\s]*$/.test(prefix.slice(0,number.index));
     const named=/単位(?:は|が|を|に|として|[：:])?[\s（(]*$/.test(prefix);
-    const compound=spans.some(span=>/^[\s·⋅/()\[\]⁻⁰¹²³⁴⁵⁶⁷⁸⁹0-9−-]+$/.test(text.slice(span.start+span.length,m.index)) && /[·⋅/]/.test(text.slice(span.start+span.length,m.index)));
-    const bracketed=/\[[^\[\]]*$/.test(prefix) && /^[^\[\]]*\]/.test(text.slice(m.index+m[0].length));
+    const compound=spans.some(span=>/^[\s·⋅/()\[\]⁻⁰¹²³⁴⁵⁶⁷⁸⁹0-9−-]+$/.test(text.slice(span.start+span.length,m.index)) && (/[·⋅/]/.test(text.slice(span.start+span.length,m.index)) || /^(?:[−-]\d+|[⁻⁰¹²³⁴⁵⁶⁷⁸⁹]+)/.test(text.slice(m.index+m[0].length))));
+    const open=prefix.lastIndexOf('['),close=text.indexOf(']',m.index);
+    const inBrackets=open>prefix.lastIndexOf(']') && close>=0;
+    const bracket=inBrackets?text.slice(open+1,close):'';
+    const unitExpression=/^(?:(?:mmol|kmol|mol|kg|mg|mL|kPa|MPa|Pa|kJ|cm|nm|Hz|g|L|J|K|s|m|V|A|W|N|C|F|S|Ω)(?:[⁻⁰¹²³⁴⁵⁶⁷⁸⁹0-9−-]+)?[\s·⋅/()]*)+$/;
+    const quantityLabel=/(?:単位|長さ|距離|面積|体積|質量|時間|温度|圧力|力|電圧|電流|電荷|抵抗)[：:\s（(]*$/.test(text.slice(0,open));
+    const bracketed=inBrackets && unitExpression.test(bracket) && (quantityLabel || /[·⋅/]/.test(bracket) || /[a-z]{2}/.test(bracket) || /^[gsmt]\s*$/.test(bracket) && /[A-Za-z]\s*$/.test(text.slice(0,open)));
     const suffix=text.slice(m.index+m[0].length);
+    if(inBrackets && !bracketed) continue;
+    if(/[=＝]/.test(text) && m[0].length===1 && !/\s$/.test(prefix) && /^[+−-]\s*\d+(?:[.,]\d+)?\s*(?:$|[=＝])/.test(suffix)) continue;
     if((!/^\s*[=＝<>≤≥≠]/.test(suffix) || /\d$/.test(prefix)) && (value || named || compound || bracketed)) spans.push({start:m.index,length:m[0].length,kind:'unit'});
   }
   return spans;
@@ -52,10 +60,12 @@ export function unitSpans(text) {
 // species, reaction equations and named upright functions are not inferred here.
 export function mathVariables(text, protectedRanges=[]) {
   const marks=[];
-  const functions=new Set(['sin','cos','tan','asin','acos','atan','sinh','cosh','tanh','log','ln','exp','sqrt','max','min','lim','det']);
+  const functions=new Set(['sin','cos','tan','asin','acos','atan','sinh','cosh','tanh','log','lg','ln','exp','sqrt','max','min','lim','det']);
   const fixedUnits=new Set(['mol','mmol','kmol','kg','mg','mL','kPa','MPa','Pa','kJ','cm','nm','Hz']);
   if(/[→⇄⇌↔⇒⟶⟷]/.test(text)) return marks;
   const protectedSpans=[...protectedRanges,...[...text.matchAll(/\[[A-Z][A-Za-z0-9₀-₉⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻+−\s-]*\]|[℃°◦]\s*C/g)].map(m=>({start:m.index,length:m[0].length}))];
+  // Named acidity quantities are upright symbols (IUPAC Gold Book S06210).
+  for(const m of text.matchAll(/(?<![A-Za-z])p\s*(?:O\s*)?H(?![A-Za-z])/g)) protectedSpans.push({start:m.index,length:m[0].length});
   const labels=[...text.matchAll(/(?<![A-Za-z])\((?:[a-z]|[ivxlcdm]+)\)/g)];
   if(labels.length>=2 || /^\s*\([ivxlcdm]+\)/.test(text)) for(const m of labels) protectedSpans.push({start:m.index,length:m[0].length});
   const atomicAssignments=[...text.matchAll(/([A-Z][a-z]?)\s*[=＝]\s*\d+(?:\.\d+)?/g)].filter(m=>checkFormula(m[1]).status==='parsed');
@@ -76,7 +86,7 @@ export function mathVariables(text, protectedRanges=[]) {
     if(!protectedRanges.some(r=>r.kind==='unit' && r.start>=run.index && r.start<run.index+run[0].length) && checkReaction(run[0]).status!=='unknown') continue;
     for(const token of run[0].matchAll(/[A-Za-zΑ-Ωα-ω∆]+/gu)) {
       const value=token[0];
-      if(functions.has(value) || fixedUnits.has(value) || value.length>3 && !/^[A-ZΑ-Ω]+$/.test(value)) continue;
+      if(functions.has(value) || fixedUnits.has(value) || value.length>3) continue;
       if(value.length>1 && /[a-z]/.test(value) && checkFormula(value).status==='parsed') continue;
       for(let n=0;n<value.length;n++) {
         if(/[Δ∆]/.test(value[n])) continue;
