@@ -1,4 +1,4 @@
-import {compoundVocabulary,compoundOptions} from './compound-names.mjs?v=40';
+import {compoundVocabulary,compoundOptions} from './compound-names.mjs?v=41';
 export const normalize = text => text.normalize('NFKC');
 export function oneEdit(a,b) {
   if(a===b || Math.abs(a.length-b.length)>1) return false;

@@ -1,12 +1,12 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import {chemicalSpan} from './chemical-spans.mjs?v=40';
-import { schoolChecks } from './school-checks.mjs?v=40';
-import { curriculumChecks } from './curriculum.mjs?v=40';
-import { mathVariables, unitSpans, scriptLabelSpans, mathText } from './math-roles.mjs?v=40';
-import { formulaChecks } from './formulas.mjs?v=40';
-import { Lexicon } from "./lexicon.mjs?v=40";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=40';
-import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=40';
+import {chemicalSpan} from './chemical-spans.mjs?v=41';
+import { schoolChecks } from './school-checks.mjs?v=41';
+import { curriculumChecks } from './curriculum.mjs?v=41';
+import { mathVariables, unitSpans, scriptLabelSpans, mathText } from './math-roles.mjs?v=41';
+import { formulaChecks } from './formulas.mjs?v=41';
+import { Lexicon } from "./lexicon.mjs?v=41";
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=41';
+import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=41';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
@@ -55,7 +55,6 @@ const state = {
   file: null,
   pdf: null,
   documentType: null,
-  pptxPreviewer: null,
   pages: [],
   items: [],
   candidates: [],
@@ -323,15 +322,14 @@ function analyzeDocument() {
 }
 
 async function openPdf(file) {
-  if (!file || (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf")) {
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
     showToast("PDFファイルを選択してください。");
     return;
   }
   await dictionaryReady;
   state.file = file;
   state.documentType = "pdf";
-  state.pptxPreviewer?.destroy?.();
-  state.pptxPreviewer = null;
   state.pdf = null;
   state.pages = [];
   state.items = [];
@@ -462,149 +460,6 @@ function availableDocumentWidth() {
   const style = getComputedStyle(elements.documentArea);
   const horizontalPadding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
   return Math.max(280, elements.documentArea.clientWidth - horizontalPadding - 8);
-}
-
-function resetDocumentState(file, type) {
-  state.file = file;
-  state.documentType = type;
-  state.pdf = null;
-  state.pages = [];
-  state.items = [];
-  state.candidates = [];
-  state.selectedId = null;
-  state.highlightAll = false;
-  state.searchItemIds = new Set();
-  state.searchOccurrences = [];
-  state.searchCursor = -1;
-  state.pptxPreviewer?.destroy?.();
-  state.pptxPreviewer = null;
-  resetPanels();
-}
-
-async function fingerprintBytes(data) {
-  return [...new Uint8Array(await crypto.subtle.digest("SHA-256", data))]
-    .map((value) => value.toString(16).padStart(2, "0")).join("");
-}
-
-function extractPptxSlide(slide, pageNumber, pageCount) {
-  slide.classList.add("page-shell", "pptx-page-shell");
-  slide.dataset.page = String(pageNumber);
-  const pageLabel = document.createElement("span");
-  pageLabel.className = "page-number";
-  pageLabel.textContent = `${pageNumber} / ${pageCount}`;
-  const highlightLayer = document.createElement("div");
-  highlightLayer.className = "highlight-layer";
-  const textLayer = document.createElement("div");
-  textLayer.className = "text-layer pptx-text-layer";
-  textLayer.setAttribute("aria-hidden", "true");
-  const slideRect = slide.getBoundingClientRect();
-  const pageItems = [];
-  const walker = document.createTreeWalker(slide, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      if (!node.nodeValue?.trim()) return NodeFilter.FILTER_REJECT;
-      if (node.parentElement?.closest(".page-number,.highlight-layer,.text-layer")) return NodeFilter.FILTER_REJECT;
-      return NodeFilter.FILTER_ACCEPT;
-    },
-  });
-  const nodes = [];
-  while (walker.nextNode()) nodes.push(walker.currentNode);
-  for (const node of nodes) {
-    const text = node.nodeValue;
-    const range = document.createRange();
-    range.selectNodeContents(node);
-    const rect = range.getBoundingClientRect();
-    if (!rect.width || !rect.height) continue;
-    const computed = getComputedStyle(node.parentElement);
-    const size = Math.max(1, parseFloat(computed.fontSize) || rect.height);
-    const bold = Number.parseInt(computed.fontWeight, 10) >= 600 || /bold/i.test(computed.fontWeight);
-    const italic = /italic|oblique/i.test(computed.fontStyle);
-    const item = {
-      id: `p${pageNumber}-i${pageItems.length}`,
-      pageNumber,
-      text,
-      normalized: normalizeText(text),
-      font: computed.fontFamily || "",
-      size,
-      bold,
-      italic,
-      role: classifyRole(text, size, bold),
-      rect: { left: rect.left - slideRect.left, top: rect.top - slideRect.top, width: rect.width, height: rect.height },
-      shell: slide,
-      highlightLayer,
-      textLayer,
-    };
-    if(Math.abs(item.textDirection.y)>.01) {
-      const {x:dx,y:dy}=item.textDirection,origin=item.textOrigin;
-      const points=[[-scaledHeight,0],[-scaledHeight,scaledWidth],[scaledHeight*.18,0],[scaledHeight*.18,scaledWidth]]
-        .map(([across,along])=>({x:origin.x-dy*across+dx*along,y:origin.y+dx*across+dy*along}));
-      const left=Math.min(...points.map(p=>p.x)),top=Math.min(...points.map(p=>p.y));
-      item.rect={left,top,width:Math.max(...points.map(p=>p.x))-left,height:Math.max(...points.map(p=>p.y))-top};
-    }
-    const span = document.createElement("span");
-    span.textContent = text;
-    span.dataset.itemId = item.id;
-    span.style.left = `${item.rect.left}px`;
-    span.style.top = `${item.rect.top}px`;
-    span.style.width = `${item.rect.width}px`;
-    span.style.height = `${item.rect.height}px`;
-    span.style.fontSize = `${item.rect.height}px`;
-    span.style.lineHeight = `${item.rect.height}px`;
-    textLayer.append(span);
-    pageItems.push(item);
-    state.items.push(item);
-  }
-  slide.append(pageLabel, highlightLayer, textLayer);
-  state.pages.push({ pageNumber, shell: slide, viewport: { width: slideRect.width, height: slideRect.height }, items: pageItems });
-}
-
-async function openPptx(file) {
-  await dictionaryReady;
-  if (!window.pptxPreview?.init) {
-    showToast("PPTX表示機能を読み込めませんでした。");
-    return;
-  }
-  resetDocumentState(file, "pptx");
-  setLoading(true, `${file.name} をブラウザー内で読み込んでいます`);
-  try {
-    const buffer = await file.arrayBuffer();
-    state.fingerprint = await fingerprintBytes(buffer);
-    state.reviews = {}; state.roles = {}; state.exclusions = {}; state.revision = null; state.revisionSignatures = null;
-    $("#revisionPanel").hidden = true;
-    const width = Math.min(960, availableDocumentWidth());
-    state.pptxPreviewer = window.pptxPreview.init(elements.pages, { width, mode: "list" });
-    const presentation = await state.pptxPreviewer.preview(buffer);
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    const slides = [...elements.pages.querySelectorAll(".pptx-preview-slide-wrapper")];
-    if (!slides.length) throw new Error("スライドを表示できませんでした。");
-    state.pdf = { numPages: slides.length };
-    elements.pageCount.textContent = slides.length;
-    slides.forEach((slide, index) => extractPptxSlide(slide, index + 1, slides.length));
-    analyzeDocument();
-    elements.summary.hidden = false;
-    elements.filters.hidden = false;
-    elements.candidateActions.hidden = false;
-    elements.itemCount.textContent = state.items.length.toLocaleString("ja-JP");
-    elements.searchToggleButton.disabled = false;
-    elements.dropZone.hidden = true;
-    showToast(`${presentation?.slides?.length || slides.length}枚のスライドを解析しました。`);
-  } catch (error) {
-    console.error(error);
-    state.pdf = null;
-    state.documentType = null;
-    elements.dropZone.hidden = false;
-    showToast("PPTXを読み込めませんでした。対応していない図形は表示が崩れる場合があります。");
-  } finally {
-    setLoading(false);
-  }
-}
-
-async function openDocument(file) {
-  const name = file?.name?.toLowerCase() || "";
-  if (name.endsWith(".pptx") || file?.type === "application/vnd.openxmlformats-officedocument.presentationml.presentation") {
-    return openPptx(file);
-  }
-  if (name.endsWith(".pdf") || file?.type === "application/pdf") return openPdf(file);
-  showToast("PDFまたはPPTXファイルを選択してください。");
 }
 
 async function renderAndExtractPage(pageNumber) {
@@ -1418,7 +1273,7 @@ $('#findSelectedFont').addEventListener('click',()=>{
  elements.clearTextSearchButton.hidden=false;updateSearchNavigation();if(state.searchOccurrences.length)goToSearchResult(0);
 });
 
-elements.fileInput.addEventListener("change", (event) => openDocument(event.target.files?.[0]));
+elements.fileInput.addEventListener("change", (event) => openPdf(event.target.files?.[0]));
 elements.searchToggleButton.addEventListener("click", () => {
   const opening = elements.searchForm.hidden;
   elements.searchForm.hidden = !opening;
@@ -1470,7 +1325,7 @@ for (const eventName of ["dragleave", "drop"]) {
     elements.dropZone.classList.remove("dragover");
   });
 }
-elements.documentArea.addEventListener("drop", (event) => openDocument(event.dataTransfer?.files?.[0]));
+elements.documentArea.addEventListener("drop", (event) => openPdf(event.dataTransfer?.files?.[0]));
 window.addEventListener("keydown", (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f" && state.pdf) {
     event.preventDefault();

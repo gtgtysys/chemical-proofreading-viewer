@@ -1,4 +1,4 @@
-import {mathVariables,unitSpans} from './math-roles.mjs?v=40';
+import {mathVariables,unitSpans} from './math-roles.mjs?v=41';
 
 const indexes=new WeakMap();
 // Combine glyph typography, script geometry and local mathematical context.

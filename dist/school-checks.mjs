@@ -1,5 +1,5 @@
 // Conservative school-chemistry checks. Each result maps back to source text.
-import {mathVariables,unitSpans,scriptLabelSpans,mathText} from './math-roles.mjs?v=40';
+import {mathVariables,unitSpans,scriptLabelSpans,mathText} from './math-roles.mjs?v=41';
 export function schoolChecks(rows, items) {
   const hits=[], byId=new Map(items.map(item=>[item.id,item]));
   const quantities={圧力:'pP',体積:'V',温度:'T',絶対温度:'T',物質量:'n',質量:'m',密度:'ρ',濃度:'c',時間:'t',エンタルピー:'H',エントロピー:'S',気体定数:'R'};

@@ -188,14 +188,6 @@ button, label { -webkit-tap-highlight-color: transparent; }
 .zoom-toolbar output { min-width: 48px; text-align: center; font-size: 13px; }
 .page-shell { position: relative; background: white; box-shadow: var(--shadow); line-height: 0; }
 .page-shell canvas { display: block; max-width: none; }
-.pptx-preview-wrapper { max-width: 100%; background: transparent !important; }
-.pptx-page-shell { margin-bottom: 28px !important; line-height: normal; }
-.pptx-page-shell > .slide-background,
-.pptx-page-shell > .slide-master-wrapper,
-.pptx-page-shell > .slide-layout-wrapper,
-.pptx-page-shell > .slide-wrapper { user-select: none; -webkit-user-select: none; pointer-events: none; }
-.pptx-page-shell > .highlight-layer { z-index: 100; }
-.pptx-page-shell > .pptx-text-layer { z-index: 101; }
 .page-number { position: absolute; right: 10px; top: -23px; z-index: 4; color: #596c75; font-size: 12px; line-height: 1; }
 .highlight-layer { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .text-layer { position: absolute; inset: 0; z-index: 2; overflow: hidden; line-height: 1; user-select: text; -webkit-user-select: text; }
