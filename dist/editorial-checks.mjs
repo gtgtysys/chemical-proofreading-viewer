@@ -8,10 +8,10 @@ export function instructionChecks(blocks,items) {
   for(const row of blocks) {
     let text='';const offsets=[];
     for(let n=0;n<row.text.length;n++) if(!/\s/.test(row.text[n])) {text+=row.text[n];offsets.push(n);}
-    const pattern=/(?:誤っている|誤った|正しくない|適切でない|当てはまらない|該当しない|不適切な|誤りのある|すべて|全て|[二三四五六七八九十2-9２-９](?:つ|個))/g;
+    const pattern=/(?:誤っている|誤った|正しくない|適切でない|適当でない|当てはまらない|該当しない|不適切な|誤りのある|ではない)(?:もの|記述|説明|文章|文|式|選択肢)/g;
     for(const m of text.matchAll(pattern)) {
       const tail=text.slice(m.index+m[0].length,m.index+m[0].length+35).split(/[。．!?！？]/)[0];
-      if(!/(?:選べ|選び|選択|答え|挙げ)/.test(tail)) continue;
+      if(!/^(?:を(?:[一二三四五六七八九十0-9０-９]|つ|個|だけ|それぞれ|すべて|全て|ひとつ|ふたつ|各|記号|で|、|，){0,16}(?:選べ|選び|選択|答え|挙げ)|はどれ(?:か|ですか))/.test(tail)) continue;
       const start=offsets[m.index],end=offsets[m.index+m[0].length-1]+1;
       const glyphs=sources(row,start,end-start,items);
       if(!glyphs.length || glyphs.some(i=>/^(?:serif|sans-serif|monospace|不明)(?:\s|$)/i.test(i.font || ''))) continue;

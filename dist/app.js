@@ -1,5 +1,5 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import {instructionChecks,nonJoyoChecks,describeScriptPositions} from './editorial-checks.mjs?v=42';
+import {instructionChecks,nonJoyoChecks,describeScriptPositions} from './editorial-checks.mjs?v=43';
 import {arithmeticRows,calculationChecks} from './calculations.mjs?v=42';
 import {chemicalSpan} from './chemical-spans.mjs?v=42';
 import { schoolChecks } from './school-checks.mjs?v=42';

@@ -6,13 +6,16 @@ const joyo=JSON.parse(fs.readFileSync(new URL('../dist/dictionaries/joyo-kanji.j
 assert.equal(new Set([...joyo.characters]).size,2136);
 const glyph=(id,text,x=0,y=20,size=10,bold=false)=>({id,text,pageNumber:1,size,bold,font:bold?'LMRoman10-Bold':'LMRoman10-Regular',emHeight:size,advance:text.length*6,textOrigin:{x,y},rect:{left:x,top:y-size,width:text.length*6,height:size*1.18}});
 const row=items=>({text:items.map(i=>i.text).join(''),pageNumber:1,sourceIds:items.map(i=>i.id),charMap:items.flatMap(i=>i.text.split('').map((c,offset)=>({itemId:i.id,offset,total:i.text.length}))) });
-for(const cue of ['誤っているものを選べ。','正しくない記述を選びなさい。','適切でないものを一つ選べ。','正しいものをすべて選べ。','正しいものを二つ選べ。']) {
+for(const cue of ['誤っているものを選べ。','正しくない記述を選びなさい。','適切でないものを一つ選べ。','金属ではないものを選べ。','適当でないものはどれか。']) {
  const plain=[glyph('a',cue)],bold=[glyph('a',cue,0,20,10,true)];
  assert.equal(instructionChecks([row(plain)],plain).length,1,cue);
  assert.equal(instructionChecks([row(bold)],bold).length,0,cue);
 }
 assert.equal(instructionChecks([row([glyph('a','誤っているものについて説明する。')])],[glyph('a','誤っているものについて説明する。')]).length,0);
-const wrapped=[glyph('a','誤っ\n'),glyph('b','ているものを選べ。')];assert.equal(instructionChecks([row(wrapped)],wrapped)[0].text,'誤っ\nている');
+for(const cue of ['正しいものをすべて選べ。','正しいものを二つ選べ。','すべての物質について答えよ。','誤っている理由を答えよ。','金属ではないものがある理由を答えよ。','誤った操作を行った。次の問いに答えよ。']) {
+ const plain=[glyph('a',cue)];assert.equal(instructionChecks([row(plain)],plain).length,0,cue);
+}
+const wrapped=[glyph('a','誤っ\n'),glyph('b','ているものを選べ。')];assert.equal(instructionChecks([row(wrapped)],wrapped)[0].text,'誤っ\nているもの');
 assert.deepEqual(nonJoyoChecks([{text:'攪拌と濾過、𠮷。亜鉛と酸素。'}],joyo).map(h=>h.text),['攪','拌','濾','𠮷']);
 assert.equal(nonJoyoChecks([{text:joyo.characters}],joyo).length,0);
 const supplement=nonJoyoChecks([{text:'𠮷濾'}],joyo);assert.equal(supplement[1].start,2);
