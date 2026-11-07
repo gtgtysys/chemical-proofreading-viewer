@@ -16,6 +16,8 @@ for(const cue of ['正しいものをすべて選べ。','正しいものを二�
  const plain=[glyph('a',cue)];assert.equal(instructionChecks([row(plain)],plain).length,0,cue);
 }
 const wrapped=[glyph('a','誤っ\n'),glyph('b','ているものを選べ。')];assert.equal(instructionChecks([row(wrapped)],wrapped)[0].text,'誤っ\nているもの');
+const emphasisOnly=[glyph('a','誤っている',0,20,10,true),glyph('b','ものを選べ。',40)];
+assert.equal(instructionChecks([row(emphasisOnly)],emphasisOnly).length,0,'bold negative cue is sufficient');
 assert.deepEqual(nonJoyoChecks([{text:'攪拌と濾過、𠮷。亜鉛と酸素。'}],joyo).map(h=>h.text),['攪','拌','濾','𠮷']);
 assert.equal(nonJoyoChecks([{text:joyo.characters}],joyo).length,0);
 const supplement=nonJoyoChecks([{text:'𠮷濾'}],joyo);assert.equal(supplement[1].start,2);
