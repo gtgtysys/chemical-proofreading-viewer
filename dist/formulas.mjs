@@ -1,6 +1,6 @@
-import {checkFormula} from './reactions.mjs?v=41';
-import {expectedSubscript} from './detection.mjs?v=41';
-import {chemicalSpan} from './chemical-spans.mjs?v=41';
+import {checkFormula} from './reactions.mjs?v=42';
+import {expectedSubscript} from './detection.mjs?v=42';
+import {chemicalSpan} from './chemical-spans.mjs?v=42';
 
 // Check the notation of a parsed chemical species, not a list of named compounds.
 export function formulaChecks(row,items) {

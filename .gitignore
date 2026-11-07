@@ -39,3 +39,5 @@ node_modules/
 
 !/dictionary-sources/test-compound-names.mjs
 !/dictionary-sources/test-symbol-context.mjs
+!/dictionary-sources/build-joyo.mjs
+!/dictionary-sources/test-editorial-checks.mjs

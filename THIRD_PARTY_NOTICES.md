@@ -51,3 +51,13 @@ Copyright Mozilla Foundation. Apache License 2.0。
 ## 独自コード
 
 独自コードのライセンスはまだ選択していません。GitHubで閲覧可能にすることと、自由な再利用を許すオープンソースライセンスを付けることは別です。MIT等を選択する場合も、上記の辞書・依存物を一括して同じライセンスに変更しないでください。
+
+## 常用漢字表
+
+`dist/dictionaries/joyo-kanji.json` は平成22年内閣告示第2号の常用漢字表から字種2136字と許容字体を抽出したものです。
+
+- 原典：[文化庁・常用漢字表](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/pdf/joyokanjihyo_20101130.pdf)
+- 機械可読データ：[mandel59/joyokanjihyo](https://github.com/mandel59/joyokanjihyo)
+- 内閣告示としてパブリックドメイン（PD-Japan-Gov）。音訓・例文は収録していません。
+
+再生成：上記リポジトリの `joyokanjihyo.json` を `dictionary-sources/joyokanjihyo-upstream.json` に保存し、リポジトリ直下で `node dictionary-sources/build-joyo.mjs` を実行します。取得データのSHA-256を生成JSONに記録します。

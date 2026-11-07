@@ -1,12 +1,14 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import {chemicalSpan} from './chemical-spans.mjs?v=41';
-import { schoolChecks } from './school-checks.mjs?v=41';
-import { curriculumChecks } from './curriculum.mjs?v=41';
-import { mathVariables, unitSpans, scriptLabelSpans, mathText } from './math-roles.mjs?v=41';
-import { formulaChecks } from './formulas.mjs?v=41';
-import { Lexicon } from "./lexicon.mjs?v=41";
-import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=41';
-import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=41';
+import {instructionChecks,nonJoyoChecks,describeScriptPositions} from './editorial-checks.mjs?v=42';
+import {arithmeticRows,calculationChecks} from './calculations.mjs?v=42';
+import {chemicalSpan} from './chemical-spans.mjs?v=42';
+import { schoolChecks } from './school-checks.mjs?v=42';
+import { curriculumChecks } from './curriculum.mjs?v=42';
+import { mathVariables, unitSpans, scriptLabelSpans, mathText } from './math-roles.mjs?v=42';
+import { formulaChecks } from './formulas.mjs?v=42';
+import { Lexicon } from "./lexicon.mjs?v=42";
+import { reviewLabels, reviewKey, snapshotRows, carryReviews, parsePreferences, structureChecks } from './workflow.mjs?v=42';
+import { textRows, textFlows, detectionIndex, scriptGroup, formulaEvidence, expectedSubscript } from './detection.mjs?v=42';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.mjs";
 
@@ -45,6 +47,7 @@ const elements = {
   detailFont: $("#detailFont"),
   detailSize: $("#detailSize"),
   detailStyle: $("#detailStyle"),
+  detailPosition: $("#detailPosition"),
   suggestionBox: $("#suggestionBox"),
   detailSuggestion: $("#detailSuggestion"),
   detailPanel: $(".detail-panel"),
@@ -71,6 +74,7 @@ const state = {
   lexicon: null,
   generalLexicon: null,
   curriculumPolicy: {schemaVersion:1,entries:[]},
+  joyoPolicy: null,
   additionalVocabulary: {entries: []},
   compoundComponents: null,
   rules: { term: [], symbol: [], formula: [] },
@@ -150,17 +154,19 @@ async function loadDefaultDictionary() {
     if(!individualResponse.ok) throw Error('個別ルール取得失敗');
     const individual = await individualResponse.json();
     compileDictionary({...base, terms:individual.terms, patterns:individual.patterns});
-    const [chemistry, general, additions, curriculumPolicy, components] = await Promise.all([
+    const [chemistry, general, additions, curriculumPolicy, components, joyo] = await Promise.all([
       fetch('./dictionaries/school-chemistry.json').then(r => { if(!r.ok) throw Error('化学辞書取得失敗'); return r.json(); }),
       fetch('./dictionaries/general-runtime.json').then(r => { if(!r.ok) throw Error('一般語辞書取得失敗'); return r.json(); }),
       fetch('./dictionaries/community-vocabulary.json', {cache:'no-store'}).then(r => { if(!r.ok) throw Error('追加語彙取得失敗'); return r.json(); }),
       fetch('./dictionaries/curriculum-review.json', {cache:'no-store'}).then(r => { if(!r.ok) throw Error('教科書改訂ルール取得失敗'); return r.json(); }),
       fetch('./dictionaries/compound-components.json', {cache:'no-store'}).then(r => { if(!r.ok) throw Error('化合物名辞書取得失敗'); return r.json(); }),
+      fetch('./dictionaries/joyo-kanji.json').then(r=>{if(!r.ok)throw Error('常用漢字表取得失敗');return r.json();}),
     ]);
     state.generalLexicon = general;
     state.additionalVocabulary = additions;
     state.curriculumPolicy = curriculumPolicy;
     state.compoundComponents=components;
+    state.joyoPolicy=joyo;
     state.lexicon = new Lexicon(chemistry, general, additions, components);
   } catch (error) {
     console.warn(error);
@@ -662,6 +668,12 @@ function detectCandidates(items) {
 
   const virtualLines = buildVirtualLines(extractedItems);
   const proseBlocks = textFlows(virtualLines,extractedItems,state.pages);
+  const editorial=[...instructionChecks(proseBlocks,extractedItems),...nonJoyoChecks(proseBlocks,state.joyoPolicy),...calculationChecks(arithmeticRows(virtualLines,extractedItems),extractedItems)];
+  for(const hit of editorial) {
+    const segments=segmentsFromCharacterMap(hit.row.charMap,hit.start,hit.length);
+    const item=extractedItems.find(i=>i.id===segments[0]?.itemId);
+    if(item) candidates.push(makeCandidate({item,segments,type:hit.type,label:hit.label,severity:'medium',text:hit.text,suggestion:hit.suggestion,reason:hit.reason}));
+  }
   for(const hit of curriculumChecks(proseBlocks,state.curriculumPolicy)) {
     const segments=segmentsFromCharacterMap(hit.row.charMap,hit.start,hit.length);
     const item=extractedItems.find(item=>item.id===segments[0]?.itemId);
@@ -997,6 +1009,7 @@ function selectCandidate(candidateId) {
   elements.detailFont.textContent = hasReliableFont(item.font) ? displayFont(item.font) : "取得できず";
   elements.detailSize.textContent = `${item.size.toFixed(1)} pt`;
   elements.detailStyle.textContent = [item.bold ? "太字" : "標準", item.italic ? "斜体" : null].filter(Boolean).join("・");
+  elements.detailPosition.textContent=describeScriptPositions(candidateItems,state.items);
   elements.suggestionBox.hidden = !candidate.suggestion;
   elements.detailSuggestion.textContent = candidate.suggestion || "";
   renderCandidates();
@@ -1152,6 +1165,7 @@ function showTextSelectionDetails() {
   elements.detailFont.textContent = fonts.length ? [...new Set(fonts.map(displayFont))].join("・") : "取得できず";
   elements.detailSize.textContent = sizes.length === 1 ? `${sizes[0]} pt` : `${Math.min(...sizes.map(Number)).toFixed(1)}–${Math.max(...sizes.map(Number)).toFixed(1)} pt`;
   elements.detailStyle.textContent = styles.join("・");
+  elements.detailPosition.textContent=describeScriptPositions(selectedItems,state.items);
   elements.suggestionBox.hidden = true;
   renderCandidates();
 }
