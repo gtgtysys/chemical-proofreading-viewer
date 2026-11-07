@@ -1,5 +1,5 @@
 import * as pdfjsLib from "./vendor/pdf.mjs";
-import {instructionChecks,nonJoyoChecks,describeScriptPositions} from './editorial-checks.mjs?v=43';
+import {instructionChecks,nonJoyoChecks,describeScriptPositions} from './editorial-checks.mjs?v=44';
 import {arithmeticRows,calculationChecks} from './calculations.mjs?v=42';
 import {chemicalSpan} from './chemical-spans.mjs?v=42';
 import { schoolChecks } from './school-checks.mjs?v=42';
@@ -154,19 +154,20 @@ async function loadDefaultDictionary() {
     if(!individualResponse.ok) throw Error('個別ルール取得失敗');
     const individual = await individualResponse.json();
     compileDictionary({...base, terms:individual.terms, patterns:individual.patterns});
-    const [chemistry, general, additions, curriculumPolicy, components, joyo] = await Promise.all([
+    const [chemistry, general, additions, curriculumPolicy, components, joyo, hyogai] = await Promise.all([
       fetch('./dictionaries/school-chemistry.json').then(r => { if(!r.ok) throw Error('化学辞書取得失敗'); return r.json(); }),
       fetch('./dictionaries/general-runtime.json').then(r => { if(!r.ok) throw Error('一般語辞書取得失敗'); return r.json(); }),
       fetch('./dictionaries/community-vocabulary.json', {cache:'no-store'}).then(r => { if(!r.ok) throw Error('追加語彙取得失敗'); return r.json(); }),
       fetch('./dictionaries/curriculum-review.json', {cache:'no-store'}).then(r => { if(!r.ok) throw Error('教科書改訂ルール取得失敗'); return r.json(); }),
       fetch('./dictionaries/compound-components.json', {cache:'no-store'}).then(r => { if(!r.ok) throw Error('化合物名辞書取得失敗'); return r.json(); }),
       fetch('./dictionaries/joyo-kanji.json').then(r=>{if(!r.ok)throw Error('常用漢字表取得失敗');return r.json();}),
+      fetch('./dictionaries/hyogai-kanji.json').then(r=>{if(!r.ok)throw Error('表外漢字字体表取得失敗');return r.json();}),
     ]);
     state.generalLexicon = general;
     state.additionalVocabulary = additions;
     state.curriculumPolicy = curriculumPolicy;
     state.compoundComponents=components;
-    state.joyoPolicy=joyo;
+    state.joyoPolicy={...joyo,hyogai};
     state.lexicon = new Lexicon(chemistry, general, additions, components);
   } catch (error) {
     console.warn(error);

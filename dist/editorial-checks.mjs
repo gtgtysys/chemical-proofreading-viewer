@@ -25,13 +25,13 @@ export function instructionChecks(blocks,items) {
 const sets=new WeakMap();
 export function nonJoyoChecks(blocks,policy) {
   if(!policy?.characters) return [];
-  if(!sets.has(policy)) sets.set(policy,new Set([...(policy.characters+(policy.acceptable || ''))]));
+  if(!sets.has(policy)) sets.set(policy,new Set([...(policy.characters+(policy.acceptable || '')+(policy.hyogai?.characters || '')+(policy.hyogai?.acceptable || ''))]));
   const allowed=sets.get(policy),hits=[];
   for(const row of blocks) {
     let offset=0;
     for(const ch of row.text) {
       const normalized=ch.normalize('NFKC');
-      if(/\p{Unified_Ideograph}/u.test(ch) && !allowed.has(ch) && !allowed.has(normalized)) hits.push({row,start:offset,length:ch.length,text:ch,type:'kanji',label:'常用漢字外',suggestion:'仮名表記・教材の許容表記を確認',reason:'常用漢字表の本表・許容字体と照合した確認候補です。'});
+      if(/\p{Unified_Ideograph}/u.test(ch) && !allowed.has(ch) && !allowed.has(normalized)) hits.push({row,start:offset,length:ch.length,text:ch,type:'kanji',label:'範囲外の漢字',suggestion:'仮名表記・教材の許容表記を確認',reason:'常用漢字表・表外漢字字体表の字種と許容字体に照合した確認候補です。'});
       offset+=ch.length;
     }
   }

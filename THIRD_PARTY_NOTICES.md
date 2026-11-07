@@ -61,3 +61,13 @@ Copyright Mozilla Foundation. Apache License 2.0。
 - 内閣告示としてパブリックドメイン（PD-Japan-Gov）。音訓・例文は収録していません。
 
 再生成：上記リポジトリの `joyokanjihyo.json` を `dictionary-sources/joyokanjihyo-upstream.json` に保存し、リポジトリ直下で `node dictionary-sources/build-joyo.mjs` を実行します。取得データのSHA-256を生成JSONに記録します。
+
+## 表外漢字字体表
+
+`dist/dictionaries/hyogai-kanji.json` は平成12年国語審議会答申の印刷標準字体1022字と簡易慣用字体22字を収録します。
+
+- 原典：[文化庁の字体表](https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kakuki/22/pdf/jitaihyo.pdf)
+- 字種の転記元：[全日本情報学習振興協会の一覧](https://www.joho-gakushu.or.jp/kanji/hyougaikanjitest.php)
+- 転記元のNo.708「摺」を原典PDF12頁に従い「擢」へ補正。欠落していた簡易慣用字体「沪」を原典PDF17頁・[国立国語研究所の説明](https://kotoba.ninjal.ac.jp/qa/yokuaru/qa-182/)により補完しました。
+
+収録内容は公表された字種・字体の一覧のみです。転記元独自の音訓・熟語一覧・解説は含めません。再生成する場合は転記元HTMLを `dictionary-sources/hyogai-upstream.html` に保存し、リポジトリ直下で `node dictionary-sources/build-hyogai.mjs` を実行します。取得データのSHA-256と補正内容をJSONに記録しています。
